@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { verifySession } from "./lib/auth"
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Protect admin dashboard routes
   if (path.startsWith("/admin/dashboard")) {
-    const isAuthenticated = await verifySession()
+    const authCookie = request.cookies.get("admin-auth")
 
-    if (!isAuthenticated) {
+    if (!authCookie || authCookie.value !== "authenticated") {
       return NextResponse.redirect(new URL("/admin", request.url))
     }
   }
@@ -20,4 +19,3 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/admin/dashboard/:path*"],
 }
-

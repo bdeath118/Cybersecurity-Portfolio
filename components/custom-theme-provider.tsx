@@ -123,4 +123,3 @@ function getContrastColor(hexColor: string): string {
   // Return black or white based on luminance
   return luminance > 0.5 ? "#000000" : "#ffffff"
 }
-

@@ -15,9 +15,10 @@ import {
   addCTFEvent,
   updateCTFEvent,
   deleteCTFEvent,
-  authenticateUser,
-  logoutUser,
 } from "./data"
+
+// Import auth functions from auth module
+import { authenticateUser, logoutUser } from "./auth"
 
 // Add these imports at the top
 import fs from "fs/promises"
@@ -393,8 +394,6 @@ export async function uploadIcon(formData: FormData) {
   }
 }
 
-// Add this function to the existing actions.ts file
-
 // Background Image Upload
 export async function uploadBackgroundImage(formData: FormData) {
   await checkAuth()
@@ -444,4 +443,3 @@ export async function uploadBackgroundImage(formData: FormData) {
     return { success: false, message: "Failed to upload background image" }
   }
 }
-

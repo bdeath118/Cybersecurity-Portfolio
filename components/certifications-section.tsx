@@ -62,4 +62,3 @@ export async function CertificationsSection() {
     </section>
   )
 }
-

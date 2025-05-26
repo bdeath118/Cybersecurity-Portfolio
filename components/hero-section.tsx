@@ -1,36 +1,55 @@
-import Link from "next/link"
+"use client"
+
 import { Button } from "@/components/ui/button"
-import { Shield } from "lucide-react"
+import { ArrowRight, Download } from "lucide-react"
+import Image from "next/image"
 
 export function HeroSection() {
   return (
-    <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-background to-muted">
-      <div className="container px-4 md:px-6">
-        <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-          <div className="flex flex-col justify-center space-y-4">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                Cyber Security Professional
+    <section className="relative min-h-screen flex items-center justify-center px-4 py-20">
+      <div className="container mx-auto max-w-6xl">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Text Content */}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+                Cybersecurity
+                <span className="block text-primary">Professional</span>
               </h1>
-              <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                Specializing in penetration testing, vulnerability assessment, and security architecture to protect
-                digital assets and infrastructure.
+              <p className="text-xl text-muted-foreground max-w-lg">
+                Passionate about protecting digital assets and building secure systems. Specializing in penetration
+                testing, incident response, and security architecture.
               </p>
             </div>
-            <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <Link href="/projects">
-                <Button size="lg">View Projects</Button>
-              </Link>
-              <Link href="/contact">
-                <Button size="lg" variant="outline">
-                  Contact Me
-                </Button>
-              </Link>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button size="lg" className="group">
+                View My Work
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+              <Button variant="outline" size="lg">
+                <Download className="mr-2 h-4 w-4" />
+                Download Resume
+              </Button>
             </div>
           </div>
-          <div className="flex items-center justify-center">
-            <div className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px] bg-gradient-to-br from-primary to-primary-foreground/20 rounded-full flex items-center justify-center">
-              <Shield className="w-32 h-32 md:w-48 md:h-48 text-primary-foreground" />
+
+          {/* Avatar Image */}
+          <div className="flex justify-center lg:justify-end">
+            <div className="relative">
+              <div className="w-80 h-80 rounded-full overflow-hidden border-4 border-primary/20 shadow-2xl">
+                <Image
+                  src="/images/avatar-photo.jpg"
+                  alt="Professional headshot"
+                  width={320}
+                  height={320}
+                  className="w-full h-full object-cover"
+                  priority
+                />
+              </div>
+              {/* Decorative elements */}
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/10 rounded-full blur-xl"></div>
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-secondary/10 rounded-full blur-xl"></div>
             </div>
           </div>
         </div>
@@ -38,4 +57,3 @@ export function HeroSection() {
     </section>
   )
 }
-

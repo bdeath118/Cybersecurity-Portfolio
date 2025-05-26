@@ -30,4 +30,3 @@ export function rateLimit(req: NextRequest) {
 
   return null // No rate limit exceeded
 }
-

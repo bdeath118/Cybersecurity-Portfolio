@@ -74,4 +74,3 @@ export interface SiteInfo {
   backgroundImage?: string
   backgroundOpacity?: number
 }
-

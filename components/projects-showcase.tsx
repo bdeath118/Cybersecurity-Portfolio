@@ -67,4 +67,3 @@ export function ProjectsShowcase({ projects }: ProjectsShowcaseProps) {
     </section>
   )
 }
-

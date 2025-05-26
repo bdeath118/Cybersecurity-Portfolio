@@ -151,4 +151,3 @@ export default async function CTFEventPage({ params }: { params: { id: string } 
     </div>
   )
 }
-
