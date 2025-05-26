@@ -122,6 +122,19 @@ export async function getSiteInfo(): Promise<SiteInfo> {
 
 export async function updateSiteInfo(updates: Partial<SiteInfo>): Promise<SiteInfo> {
   siteInfo = { ...siteInfo, ...updates }
+
+  // Also try to write to JSON file if possible
+  try {
+    const fs = await import("fs/promises")
+    const path = await import("path")
+
+    const filePath = path.join(process.cwd(), "site_info.json")
+    const jsonData = JSON.stringify(siteInfo, null, 2)
+    await fs.writeFile(filePath, jsonData, "utf-8")
+  } catch (error) {
+    console.log("Could not write to site_info.json, using in-memory storage")
+  }
+
   return siteInfo
 }
 

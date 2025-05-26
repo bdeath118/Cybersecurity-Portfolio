@@ -24,15 +24,27 @@ import { authenticateUser, logoutUser } from "./auth"
 import fs from "fs/promises"
 import path from "path"
 
-// Helper function to read site info from JSON file
+// Helper function to read site info from JSON file with fallback
 async function getSiteInfo() {
   try {
     const filePath = path.join(process.cwd(), "site_info.json")
     const fileContent = await fs.readFile(filePath, "utf-8")
     return JSON.parse(fileContent)
   } catch (error) {
-    console.error("Error reading site_info.json:", error)
-    return {} // Return a default object if the file doesn't exist or there's an error
+    // If file doesn't exist, get from data module and create the file
+    console.log("site_info.json not found, creating from default data...")
+    const { getSiteInfo: getDefaultSiteInfo } = await import("./data")
+    const defaultSiteInfo = await getDefaultSiteInfo()
+
+    // Create the file with default data
+    try {
+      await writeJsonFile("site_info.json", defaultSiteInfo)
+      console.log("Created site_info.json with default data")
+    } catch (writeError) {
+      console.error("Error creating site_info.json:", writeError)
+    }
+
+    return defaultSiteInfo
   }
 }
 
