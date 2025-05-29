@@ -1,9 +1,10 @@
 import { EnhancedDashboard } from "@/components/admin/enhanced-dashboard"
-import { checkAuth } from "@/lib/actions"
 
-export default async function AdminDashboardPage() {
-  // Check authentication
-  await checkAuth()
-
-  return <EnhancedDashboard />
+export default function AdminDashboardPage() {
+  return (
+    <div>
+      <h1>Admin Dashboard</h1>
+      <EnhancedDashboard />
+    </div>
+  )
 }

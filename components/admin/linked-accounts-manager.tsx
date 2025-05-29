@@ -5,11 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { AlertCircle, CheckCircle, ExternalLink, LogIn, LogOut, RefreshCw, Shield } from "lucide-react"
+import {
+  AlertCircle,
+  CheckCircle,
+  ExternalLink,
+  LogIn,
+  LogOut,
+  RefreshCw,
+  Shield,
+  Linkedin,
+  Github,
+  Award,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-
-// Add Dialog components import
 import {
   Dialog,
   DialogContent,
@@ -18,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface LinkedAccount {
   id: string
@@ -46,7 +55,7 @@ export function LinkedAccountsManager() {
       id: "linkedin",
       name: "LinkedIn",
       description: "Import professional skills, projects, and badges",
-      icon: "/images/linkedin-icon.png",
+      icon: <Linkedin className="h-6 w-6" />,
       color: "bg-[#0077B5]",
       textColor: "text-white",
     },
@@ -54,7 +63,7 @@ export function LinkedAccountsManager() {
       id: "github",
       name: "GitHub",
       description: "Showcase repositories and contributions",
-      icon: "/images/github-icon.png",
+      icon: <Github className="h-6 w-6" />,
       color: "bg-[#24292e]",
       textColor: "text-white",
     },
@@ -62,7 +71,7 @@ export function LinkedAccountsManager() {
       id: "credly",
       name: "Credly",
       description: "Import digital badges and certifications",
-      icon: "/images/credly-icon.png",
+      icon: <Award className="h-6 w-6" />,
       color: "bg-[#FF6B00]",
       textColor: "text-white",
     },
@@ -70,7 +79,7 @@ export function LinkedAccountsManager() {
       id: "canvas",
       name: "Canvas LMS",
       description: "Import learning achievements and badges",
-      icon: "/images/canvas-icon.png",
+      icon: <Award className="h-6 w-6" />,
       color: "bg-[#E72429]",
       textColor: "text-white",
     },
@@ -78,7 +87,7 @@ export function LinkedAccountsManager() {
       id: "tryhackme",
       name: "TryHackMe",
       description: "Import cybersecurity learning progress",
-      icon: "/images/tryhackme-icon.png",
+      icon: <Shield className="h-6 w-6" />,
       color: "bg-[#212C42]",
       textColor: "text-white",
     },
@@ -86,7 +95,7 @@ export function LinkedAccountsManager() {
       id: "hackthebox",
       name: "HackTheBox",
       description: "Import challenges and achievements",
-      icon: "/images/hackthebox-icon.png",
+      icon: <Shield className="h-6 w-6" />,
       color: "bg-[#9FEF00]",
       textColor: "text-black",
     },
@@ -366,7 +375,10 @@ export function LinkedAccountsManager() {
             .map((platform) => (
               <Card key={platform.id} className="overflow-hidden">
                 <CardHeader className={`${platform.color} ${platform.textColor}`}>
-                  <CardTitle>{platform.name}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    {platform.icon}
+                    {platform.name}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
                   <p className="text-sm">{platform.description}</p>

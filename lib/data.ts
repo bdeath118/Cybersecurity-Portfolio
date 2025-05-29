@@ -1,336 +1,334 @@
-import type { Project, Skill, Certification, CTFEvent, User, SiteInfo, DigitalBadge } from "./types"
-import { hashPassword } from "./auth"
+import fs from "fs/promises"
+import path from "path"
+import type { Project, Skill, Certification, CTFEvent, SiteInfo, DigitalBadge } from "./types"
 
-// Sample data
-const projects: Project[] = [
-  {
-    id: "1",
-    title: "Network Security Assessment Tool",
-    summary: "Automated vulnerability scanner for network infrastructure",
-    description:
-      "Developed a comprehensive network security assessment tool that automates the process of identifying vulnerabilities in network infrastructure. The tool performs port scanning, service enumeration, and vulnerability assessment using custom scripts and integration with popular security frameworks.",
-    image: "/placeholder.svg?height=300&width=400",
-    technologies: ["Python", "Nmap", "Metasploit", "Docker"],
-    demoUrl: "https://demo.example.com",
-    githubUrl: "https://github.com/example/network-scanner",
-    date: "2024-01-15",
-  },
-  {
-    id: "2",
-    title: "Incident Response Dashboard",
-    summary: "Real-time security incident monitoring and response platform",
-    description:
-      "Built a centralized dashboard for security incident response teams to monitor, track, and respond to security events in real-time. Features include automated alert correlation, incident timeline visualization, and integration with SIEM systems.",
-    image: "/placeholder.svg?height=300&width=400",
-    technologies: ["React", "Node.js", "ElasticSearch", "Kibana"],
-    demoUrl: "https://demo.example.com",
-    githubUrl: "https://github.com/example/incident-dashboard",
-    date: "2023-11-20",
-  },
-]
+// File paths
+const DATA_DIR = path.join(process.cwd(), "data")
+const PROJECTS_FILE = path.join(DATA_DIR, "projects.json")
+const SKILLS_FILE = path.join(DATA_DIR, "skills.json")
+const CERTIFICATIONS_FILE = path.join(DATA_DIR, "certifications.json")
+const CTF_EVENTS_FILE = path.join(DATA_DIR, "ctf-events.json")
+const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json")
+const DIGITAL_BADGES_FILE = path.join(DATA_DIR, "digital-badges.json")
 
-const skills: Skill[] = [
-  { id: "1", name: "Penetration Testing", level: 90, category: "Security Testing" },
-  { id: "2", name: "Network Security", level: 85, category: "Infrastructure" },
-  { id: "3", name: "Python", level: 88, category: "Programming" },
-  { id: "4", name: "Linux Administration", level: 82, category: "Systems" },
-  { id: "5", name: "SIEM Tools", level: 75, category: "Monitoring" },
-]
+// Ensure data directory exists
+async function ensureDataDir() {
+  try {
+    await fs.access(DATA_DIR)
+  } catch {
+    await fs.mkdir(DATA_DIR, { recursive: true })
+  }
+}
 
-const certifications: Certification[] = [
-  {
-    id: "1",
-    name: "Certified Ethical Hacker (CEH)",
-    issuer: "EC-Council",
-    date: "2023-06-15",
-    expiryDate: "2026-06-15",
-    description:
-      "Comprehensive certification covering ethical hacking methodologies and penetration testing techniques.",
-    logo: "/placeholder.svg?height=100&width=100",
-    credentialUrl: "https://cert.eccouncil.org/verify",
-  },
-  {
-    id: "2",
-    name: "CompTIA Security+",
-    issuer: "CompTIA",
-    date: "2022-03-10",
-    expiryDate: "2025-03-10",
-    description:
-      "Foundation-level cybersecurity certification covering network security, compliance, and operational security.",
-    logo: "/placeholder.svg?height=100&width=100",
-    credentialUrl: "https://www.certmetrics.com/comptia",
-  },
-]
+// Generic file operations with error handling
+async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
+  try {
+    await ensureDataDir()
+    const data = await fs.readFile(filePath, "utf-8")
+    return JSON.parse(data)
+  } catch (error) {
+    console.warn(`File ${filePath} not found, using default value`)
+    return defaultValue
+  }
+}
 
-const digitalBadges: DigitalBadge[] = [
-  {
-    id: "1",
-    name: "Cybersecurity Fundamentals",
-    issuer: "IBM",
-    date: "2024-01-10",
-    description: "Demonstrates understanding of cybersecurity principles and best practices",
-    badgeUrl: "/placeholder.svg?height=80&width=80",
-    verificationUrl: "https://credly.com/badges/example",
-    platform: "credly",
-    skills: ["Cybersecurity", "Risk Management"],
-    image: "/placeholder.svg?height=80&width=80",
-  },
-  {
-    id: "2",
-    name: "Ethical Hacking Essentials",
-    issuer: "EC-Council",
-    date: "2023-12-15",
-    description: "Foundational knowledge in ethical hacking methodologies",
-    badgeUrl: "/placeholder.svg?height=80&width=80",
-    verificationUrl: "https://credly.com/badges/example2",
-    platform: "credly",
-    skills: ["Penetration Testing", "Vulnerability Assessment"],
-    image: "/placeholder.svg?height=80&width=80",
-  },
-]
+async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
+  try {
+    await ensureDataDir()
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2))
+  } catch (error) {
+    console.error(`Error writing to ${filePath}:`, error)
+    throw error
+  }
+}
 
-const ctfEvents: CTFEvent[] = [
-  {
-    id: "1",
-    name: "DEF CON CTF Qualifier",
-    date: "2024-05-25",
-    difficulty: "Hard",
-    team: "CyberWarriors",
-    rank: 15,
-    totalTeams: 200,
-    flagsCaptured: 8,
-    description:
-      "Participated in the prestigious DEF CON CTF qualifier, focusing on reverse engineering and cryptography challenges.",
-    challenges: [
-      { id: "1", name: "Crypto Challenge 1", category: "Cryptography", points: 500, solved: true },
-      { id: "2", name: "Rev Challenge 2", category: "Reverse Engineering", points: 750, solved: true },
-    ],
-  },
-]
-
-// Default users with hashed passwords
-const users: User[] = [
-  {
-    id: "1",
-    username: "admin",
-    password: hashPassword("admin123"), // Hash the default password
-  },
-]
-
-let siteInfo: SiteInfo = {
+// Default data
+const defaultSiteInfo: SiteInfo = {
   name: "John Doe",
   title: "Cybersecurity Professional",
-  description:
-    "Passionate cybersecurity professional specializing in penetration testing, incident response, and security architecture.",
+  description: "Passionate about cybersecurity, ethical hacking, and protecting digital assets.",
   email: "john.doe@example.com",
   github: "https://github.com/johndoe",
   linkedin: "https://linkedin.com/in/johndoe",
   twitter: "https://twitter.com/johndoe",
-  linkedinProfileUrl: "https://linkedin.com/in/johndoe",
+  icon: "/images/avatar-photo.jpg",
+  backgroundImage: "/images/background.jpeg",
+  backgroundOpacity: 80,
   theme: {
     primaryColor: "#3b82f6",
     secondaryColor: "#1e40af",
     backgroundColor: "#ffffff",
     textColor: "#1f2937",
   },
-  icon: "/images/avatar-photo.jpg",
-  backgroundImage: "/images/background.jpeg",
-  backgroundOpacity: 80,
-  siteUrl: process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app",
+  siteUrl: "https://cybersecurity-portfolio-bdeath118.vercel.app",
+  linkedinProfileUrl: "",
   autoImportSettings: {
     linkedinEnabled: false,
-    badgesEnabled: false,
+    badgesEnabled: true,
     importFrequency: "daily",
   },
 }
 
-// Helper function to generate IDs
-function generateId(): string {
-  return Math.random().toString(36).substr(2, 9)
+// Projects
+export async function getProjects(): Promise<Project[]> {
+  return readJsonFile(PROJECTS_FILE, [])
 }
 
-// Site Info functions
-export async function getSiteInfo(): Promise<SiteInfo> {
-  return siteInfo
-}
-
-export async function updateSiteInfo(updates: Partial<SiteInfo>): Promise<SiteInfo> {
-  siteInfo = { ...siteInfo, ...updates }
-
-  // Also try to write to JSON file if possible
-  try {
-    const fs = await import("fs/promises")
-    const path = await import("path")
-
-    const filePath = path.join(process.cwd(), "site_info.json")
-    const jsonData = JSON.stringify(siteInfo, null, 2)
-    await fs.writeFile(filePath, jsonData, "utf-8")
-  } catch (error) {
-    console.log("Could not write to site_info.json, using in-memory storage")
-  }
-
-  return siteInfo
-}
-
-// Digital Badge functions
-export async function getDigitalBadges(): Promise<DigitalBadge[]> {
-  return digitalBadges
-}
-
-export async function addDigitalBadge(badge: Omit<DigitalBadge, "id">): Promise<DigitalBadge> {
-  const newBadge = { ...badge, id: generateId() }
-  digitalBadges.push(newBadge)
-  return newBadge
-}
-
-export async function updateDigitalBadge(id: string, updates: Partial<DigitalBadge>): Promise<DigitalBadge | null> {
-  const index = digitalBadges.findIndex((b) => b.id === id)
-  if (index === -1) return null
-
-  digitalBadges[index] = { ...digitalBadges[index], ...updates }
-  return digitalBadges[index]
-}
-
-export async function deleteDigitalBadge(id: string): Promise<boolean> {
-  const index = digitalBadges.findIndex((b) => b.id === id)
-  if (index === -1) return false
-
-  digitalBadges.splice(index, 1)
-  return true
-}
-
-// Project functions
-export async function getProjects(limit?: number): Promise<Project[]> {
-  return limit ? projects.slice(0, limit) : projects
-}
-
-export async function getProjectById(id: string): Promise<Project | null> {
+export async function getProject(id: string): Promise<Project | null> {
+  const projects = await getProjects()
   return projects.find((p) => p.id === id) || null
 }
 
 export async function addProject(project: Omit<Project, "id">): Promise<Project> {
-  const newProject = { ...project, id: generateId() }
+  const projects = await getProjects()
+  const newProject: Project = {
+    ...project,
+    id: Date.now().toString(),
+  }
   projects.push(newProject)
+  await writeJsonFile(PROJECTS_FILE, projects)
   return newProject
 }
 
 export async function updateProject(id: string, updates: Partial<Project>): Promise<Project | null> {
+  const projects = await getProjects()
   const index = projects.findIndex((p) => p.id === id)
   if (index === -1) return null
 
   projects[index] = { ...projects[index], ...updates }
+  await writeJsonFile(PROJECTS_FILE, projects)
   return projects[index]
 }
 
 export async function deleteProject(id: string): Promise<boolean> {
-  const index = projects.findIndex((p) => p.id === id)
-  if (index === -1) return false
+  const projects = await getProjects()
+  const filteredProjects = projects.filter((p) => p.id !== id)
+  if (filteredProjects.length === projects.length) return false
 
-  projects.splice(index, 1)
+  await writeJsonFile(PROJECTS_FILE, filteredProjects)
   return true
 }
 
-// Skill functions
+// Skills
 export async function getSkills(): Promise<Skill[]> {
-  return skills
+  return readJsonFile(SKILLS_FILE, [])
 }
 
 export async function addSkill(skill: Omit<Skill, "id">): Promise<Skill> {
-  const newSkill = { ...skill, id: generateId() }
+  const skills = await getSkills()
+  const newSkill: Skill = {
+    ...skill,
+    id: Date.now().toString(),
+  }
   skills.push(newSkill)
+  await writeJsonFile(SKILLS_FILE, skills)
   return newSkill
 }
 
 export async function updateSkill(id: string, updates: Partial<Skill>): Promise<Skill | null> {
+  const skills = await getSkills()
   const index = skills.findIndex((s) => s.id === id)
   if (index === -1) return null
 
   skills[index] = { ...skills[index], ...updates }
+  await writeJsonFile(SKILLS_FILE, skills)
   return skills[index]
 }
 
 export async function deleteSkill(id: string): Promise<boolean> {
-  const index = skills.findIndex((s) => s.id === id)
-  if (index === -1) return false
+  const skills = await getSkills()
+  const filteredSkills = skills.filter((s) => s.id !== id)
+  if (filteredSkills.length === skills.length) return false
 
-  skills.splice(index, 1)
+  await writeJsonFile(SKILLS_FILE, filteredSkills)
   return true
 }
 
-// Certification functions
+// Certifications
 export async function getCertifications(): Promise<Certification[]> {
-  return certifications
+  return readJsonFile(CERTIFICATIONS_FILE, [])
 }
 
 export async function addCertification(certification: Omit<Certification, "id">): Promise<Certification> {
-  const newCertification = { ...certification, id: generateId() }
+  const certifications = await getCertifications()
+  const newCertification: Certification = {
+    ...certification,
+    id: Date.now().toString(),
+  }
   certifications.push(newCertification)
+  await writeJsonFile(CERTIFICATIONS_FILE, certifications)
   return newCertification
 }
 
 export async function updateCertification(id: string, updates: Partial<Certification>): Promise<Certification | null> {
+  const certifications = await getCertifications()
   const index = certifications.findIndex((c) => c.id === id)
   if (index === -1) return null
 
   certifications[index] = { ...certifications[index], ...updates }
+  await writeJsonFile(CERTIFICATIONS_FILE, certifications)
   return certifications[index]
 }
 
 export async function deleteCertification(id: string): Promise<boolean> {
-  const index = certifications.findIndex((c) => c.id === id)
-  if (index === -1) return false
+  const certifications = await getCertifications()
+  const filteredCertifications = certifications.filter((c) => c.id !== id)
+  if (filteredCertifications.length === certifications.length) return false
 
-  certifications.splice(index, 1)
+  await writeJsonFile(CERTIFICATIONS_FILE, filteredCertifications)
   return true
 }
 
-// CTF Event functions
-export async function getCTFEvents(limit?: number): Promise<CTFEvent[]> {
-  return limit ? ctfEvents.slice(0, limit) : ctfEvents
+// CTF Events
+export async function getCTFEvents(): Promise<CTFEvent[]> {
+  return readJsonFile(CTF_EVENTS_FILE, [])
 }
 
-export async function getCTFEventById(id: string): Promise<CTFEvent | null> {
-  return ctfEvents.find((e) => e.id === id) || null
+export async function getCTFEvent(id: string): Promise<CTFEvent | null> {
+  const events = await getCTFEvents()
+  return events.find((e) => e.id === id) || null
 }
 
 export async function addCTFEvent(event: Omit<CTFEvent, "id">): Promise<CTFEvent> {
-  const newEvent = { ...event, id: generateId() }
-  ctfEvents.push(newEvent)
+  const events = await getCTFEvents()
+  const newEvent: CTFEvent = {
+    ...event,
+    id: Date.now().toString(),
+  }
+  events.push(newEvent)
+  await writeJsonFile(CTF_EVENTS_FILE, events)
   return newEvent
 }
 
 export async function updateCTFEvent(id: string, updates: Partial<CTFEvent>): Promise<CTFEvent | null> {
-  const index = ctfEvents.findIndex((e) => e.id === id)
+  const events = await getCTFEvents()
+  const index = events.findIndex((e) => e.id === id)
   if (index === -1) return null
 
-  ctfEvents[index] = { ...ctfEvents[index], ...updates }
-  return ctfEvents[index]
+  events[index] = { ...events[index], ...updates }
+  await writeJsonFile(CTF_EVENTS_FILE, events)
+  return events[index]
 }
 
 export async function deleteCTFEvent(id: string): Promise<boolean> {
-  const index = ctfEvents.findIndex((e) => e.id === id)
-  if (index === -1) return false
+  const events = await getCTFEvents()
+  const filteredEvents = events.filter((e) => e.id !== id)
+  if (filteredEvents.length === events.length) return false
 
-  ctfEvents.splice(index, 1)
+  await writeJsonFile(CTF_EVENTS_FILE, filteredEvents)
   return true
 }
 
-// User validation function for database users
-export async function validateUser(username: string, password: string): Promise<User | null> {
-  const hashedPassword = hashPassword(password)
-  const user = users.find((u) => u.username === username && u.password === hashedPassword)
-  return user || null
+// Digital Badges
+export async function getDigitalBadges(): Promise<DigitalBadge[]> {
+  return readJsonFile(DIGITAL_BADGES_FILE, [])
 }
 
-// Authentication functions - these are wrappers that call the auth module
-export async function authenticateUser(username: string, password: string) {
-  // Import here to avoid circular dependency
-  const { authenticateUser: authUser } = await import("./auth")
-  return authUser(username, password)
+export async function addDigitalBadge(badge: Omit<DigitalBadge, "id">): Promise<DigitalBadge> {
+  const badges = await getDigitalBadges()
+  const newBadge: DigitalBadge = {
+    ...badge,
+    id: Date.now().toString(),
+  }
+  badges.push(newBadge)
+  await writeJsonFile(DIGITAL_BADGES_FILE, badges)
+  return newBadge
+}
+
+export async function updateDigitalBadge(id: string, updates: Partial<DigitalBadge>): Promise<DigitalBadge | null> {
+  const badges = await getDigitalBadges()
+  const index = badges.findIndex((b) => b.id === id)
+  if (index === -1) return null
+
+  badges[index] = { ...badges[index], ...updates }
+  await writeJsonFile(DIGITAL_BADGES_FILE, badges)
+  return badges[index]
+}
+
+export async function deleteDigitalBadge(id: string): Promise<boolean> {
+  const badges = await getDigitalBadges()
+  const filteredBadges = badges.filter((b) => b.id !== id)
+  if (filteredBadges.length === badges.length) return false
+
+  await writeJsonFile(DIGITAL_BADGES_FILE, filteredBadges)
+  return true
+}
+
+// Site Info
+export async function getSiteInfo(): Promise<SiteInfo> {
+  return readJsonFile(SITE_INFO_FILE, defaultSiteInfo)
+}
+
+export async function updateSiteInfo(updates: Partial<SiteInfo>): Promise<SiteInfo> {
+  const currentInfo = await getSiteInfo()
+  const updatedInfo = { ...currentInfo, ...updates }
+  await writeJsonFile(SITE_INFO_FILE, updatedInfo)
+  return updatedInfo
+}
+
+// Session management (simplified)
+let currentSession: { userId: string; username: string } | null = null
+
+export async function loginUser(username: string, password: string): Promise<boolean> {
+  // Simple hash function for password comparison
+  const simpleHash = (str: string) => {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = (hash << 5) - hash + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+    return hash.toString()
+  }
+
+  const adminUsername = process.env.ADMIN_USERNAME || "admin"
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123"
+
+  console.log("Login attempt:", { username, providedPassword: password })
+  console.log("Expected credentials:", { adminUsername, adminPassword })
+
+  if (username === adminUsername && password === adminPassword) {
+    currentSession = { userId: "admin", username }
+    console.log("Login successful")
+    return true
+  }
+
+  console.log("Login failed")
+  return false
 }
 
 export async function logoutUser(): Promise<void> {
-  // Import here to avoid circular dependency
-  const { logoutUser: authLogout } = await import("./auth")
-  return authLogout()
+  currentSession = null
+}
+
+export async function getCurrentUser(): Promise<{ userId: string; username: string } | null> {
+  return currentSession
+}
+
+export async function isAuthenticated(): Promise<boolean> {
+  return currentSession !== null
+}
+
+// User validation function (for backward compatibility)
+export async function validateUser(
+  username: string,
+  password: string,
+): Promise<{ id: string; username: string } | null> {
+  const adminUsername = process.env.ADMIN_USERNAME || "admin"
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123"
+
+  if (username === adminUsername && password === adminPassword) {
+    return { id: "admin", username }
+  }
+
+  return null
+}
+
+// Alias functions for backward compatibility
+export async function getCTFEventById(id: string): Promise<CTFEvent | null> {
+  return getCTFEvent(id)
+}
+
+export async function getProjectById(id: string): Promise<Project | null> {
+  return getProject(id)
 }

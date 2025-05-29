@@ -113,6 +113,11 @@ export async function verifySession() {
   return true
 }
 
+// Alias for verifySession (for backward compatibility)
+export async function validateSession() {
+  return verifySession()
+}
+
 // Logout a user
 export async function logoutUser() {
   cookies().delete("admin-auth")

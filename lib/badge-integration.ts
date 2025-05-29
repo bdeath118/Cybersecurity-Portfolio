@@ -45,9 +45,15 @@ export class BadgeIntegration {
         return []
       }
 
+      // Check if Canvas user ID is available
+      const userId = process.env.CANVAS_USER_ID
+      if (!userId) {
+        console.error("Canvas User ID not configured")
+        return []
+      }
+
       // Use the token to fetch badges
       const canvasAuth = new CanvasAuthProvider()
-      const userId = process.env.CANVAS_USER_ID || ""
       const badges = await canvasAuth.getUserBadges(tokenData.accessToken, userId)
 
       // Transform the badges to our format

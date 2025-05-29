@@ -4,14 +4,17 @@ import { getEnv } from "@/lib/env"
 export async function GET() {
   try {
     const env = getEnv()
+    const vercelUrl = env.VERCEL_URL
+      ? `https://${env.VERCEL_URL}`
+      : "https://cybersecurity-portfolio-bdeath118.vercel.app"
 
     const deploymentInfo = {
       status: "deployed",
-      url: "https://cybersecurity-portfolio-bdeath118.vercel.app",
+      url: vercelUrl,
       environment: env.NODE_ENV,
       timestamp: new Date().toISOString(),
-      vercelUrl: process.env.VERCEL_URL,
-      configuredSiteUrl: env.SITE_URL,
+      vercelUrl: vercelUrl,
+      configuredSiteUrl: env.SITE_URL || vercelUrl,
       authConfigured: !!(env.ADMIN_USERNAME && env.ADMIN_PASSWORD),
       integrations: {
         linkedin: !!env.LINKEDIN_PROFILE_URL,

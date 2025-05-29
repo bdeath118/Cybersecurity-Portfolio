@@ -1,5 +1,6 @@
 import { cookies } from "next/headers"
 import axios from "axios"
+import { getEnv } from "./env"
 
 // Token storage interface
 interface TokenData {
@@ -54,14 +55,19 @@ async function getStoredCredentials(platform: string) {
   }
 }
 
+// Get base URL for the application
+function getBaseUrl() {
+  const env = getEnv()
+  return env.SITE_URL || `https://${env.VERCEL_URL}` || "https://cybersecurity-portfolio-bdeath118.vercel.app"
+}
+
 // Credly authentication provider
 export class CredlyAuthProvider {
   private static readonly AUTH_URL = "https://www.credly.com/oauth/authorize"
   private static readonly TOKEN_URL = "https://www.credly.com/oauth/token"
   private static readonly API_BASE = "https://api.credly.com/v1"
 
-  private redirectUri =
-    `${process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app"}/api/auth/credly/callback`
+  private redirectUri = `${getBaseUrl()}/api/auth/credly/callback`
 
   // Get login URL
   async getLoginUrl(): Promise<string | null> {
@@ -156,8 +162,7 @@ export class CanvasAuthProvider {
   private static readonly TOKEN_URL = "https://canvas.instructure.com/login/oauth2/token"
   private static readonly API_BASE = "https://canvas.instructure.com/api/v1"
 
-  private redirectUri =
-    `${process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app"}/api/auth/canvas/callback`
+  private redirectUri = `${getBaseUrl()}/api/auth/canvas/callback`
 
   // Get login URL
   async getLoginUrl(): Promise<string | null> {
@@ -252,8 +257,7 @@ export class LinkedInAuthProvider {
   private static readonly TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
   private static readonly API_BASE = "https://api.linkedin.com/v2"
 
-  private redirectUri =
-    `${process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app"}/api/auth/linkedin/callback`
+  private redirectUri = `${getBaseUrl()}/api/auth/linkedin/callback`
 
   // Get login URL
   async getLoginUrl(): Promise<string | null> {

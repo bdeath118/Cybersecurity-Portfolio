@@ -90,3 +90,6 @@ export function EnhancedDashboard() {
     </div>
   )
 }
+
+// Export alias for backward compatibility
+export { EnhancedDashboard as EnhancedAdminDashboard }

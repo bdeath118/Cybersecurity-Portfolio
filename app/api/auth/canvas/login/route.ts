@@ -8,7 +8,10 @@ export async function GET() {
 
     if (!loginUrl) {
       return NextResponse.redirect(
-        new URL("/admin/dashboard?error=canvas_not_configured", process.env.SITE_URL || "http://localhost:3000"),
+        new URL(
+          "/admin/dashboard?error=canvas_not_configured",
+          process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app",
+        ),
       )
     }
 
@@ -16,7 +19,10 @@ export async function GET() {
   } catch (error) {
     console.error("Error initiating Canvas login:", error)
     return NextResponse.redirect(
-      new URL("/admin/dashboard?error=canvas_login_failed", process.env.SITE_URL || "http://localhost:3000"),
+      new URL(
+        "/admin/dashboard?error=canvas_login_failed",
+        process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app",
+      ),
     )
   }
 }

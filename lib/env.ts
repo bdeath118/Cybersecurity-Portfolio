@@ -13,10 +13,13 @@ export interface Env {
 
   // Site configuration
   SITE_URL?: string
+  VERCEL_URL?: string
 
   // LinkedIn Integration
   LINKEDIN_PROFILE_URL?: string
   CREDLY_USERNAME?: string
+
+  // Canvas Integration - Optional, will be added via admin dashboard
   CANVAS_API_KEY?: string
   CANVAS_USER_ID?: string
 
@@ -41,15 +44,17 @@ export function getEnv(): Env {
     }
   }
 
-  // In production, ensure we have NEXTAUTH_URL or SITE_URL
-  if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_URL && !process.env.SITE_URL) {
-    console.error("❌ NEXTAUTH_URL or SITE_URL environment variable is required in production")
-    throw new Error("NEXTAUTH_URL or SITE_URL environment variable is required in production")
-  }
-
-  // Determine site URL with your actual Vercel URL
+  // Determine site URL with priority order:
+  // 1. SITE_URL (explicitly set)
+  // 2. NEXTAUTH_URL (for auth compatibility)
+  // 3. VERCEL_URL (automatically set by Vercel)
+  // 4. Default fallback
+  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined
   const siteUrl =
-    process.env.SITE_URL || process.env.NEXTAUTH_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app"
+    process.env.SITE_URL ||
+    process.env.NEXTAUTH_URL ||
+    vercelUrl ||
+    "https://cybersecurity-portfolio-bdeath118.vercel.app"
 
   return {
     AUTH_SECRET: authSecret,
@@ -57,6 +62,7 @@ export function getEnv(): Env {
     ADMIN_USERNAME: process.env.ADMIN_USERNAME,
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
     SITE_URL: siteUrl,
+    VERCEL_URL: vercelUrl,
     LINKEDIN_PROFILE_URL: process.env.LINKEDIN_PROFILE_URL,
     CREDLY_USERNAME: process.env.CREDLY_USERNAME,
     CANVAS_API_KEY: process.env.CANVAS_API_KEY,

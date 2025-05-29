@@ -1,60 +1,43 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { authenticateUser } from "@/lib/auth"
-import { rateLimit } from "@/lib/rate-limit"
+import { loginUser } from "@/lib/data"
 
-export async function POST(req: NextRequest) {
-  console.log("🚀 Login API called")
-
-  // Check rate limit
-  const rateLimitResponse = rateLimit(req)
-  if (rateLimitResponse) {
-    console.log("⚠️ Rate limit exceeded")
-    return rateLimitResponse
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    console.log("📝 Request body received:", {
-      hasUsername: !!body.username,
-      hasPassword: !!body.password,
-      usernameLength: body.username?.length || 0,
-      passwordLength: body.password?.length || 0,
-    })
+    const { username, password } = await request.json()
 
-    const { username, password } = body
+    console.log("Login API called with:", { username, password: "***" })
 
     if (!username || !password) {
-      console.log("❌ Missing credentials")
-      return NextResponse.json({ success: false, message: "Username and password are required" }, { status: 400 })
+      return NextResponse.json({ error: "Username and password are required" }, { status: 400 })
     }
 
-    console.log("🔐 Attempting authentication...")
-    const result = await authenticateUser(username, password)
-    console.log("✅ Authentication result:", result)
+    const isValid = await loginUser(username, password)
 
-    return NextResponse.json(result)
-  } catch (error) {
-    console.error("💥 Login error:", error)
-
-    // Provide more specific error messages
-    if (error instanceof Error) {
-      if (error.message.includes("AUTH_SECRET")) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Server configuration error. Please check environment variables.",
-          },
-          { status: 500 },
-        )
+    if (isValid) {
+      // Create a simple session
+      const sessionData = {
+        userId: "admin",
+        username,
+        timestamp: Date.now(),
       }
-    }
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "An error occurred during login. Please try again.",
-      },
-      { status: 500 },
-    )
+      const response = NextResponse.json({ success: true })
+
+      // Set session cookie
+      response.cookies.set("auth-session", JSON.stringify(sessionData), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24, // 24 hours
+        path: "/",
+        sameSite: "lax",
+      })
+
+      return response
+    } else {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
+  } catch (error) {
+    console.error("Login error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
