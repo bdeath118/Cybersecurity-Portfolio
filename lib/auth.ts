@@ -34,7 +34,7 @@ export function hashPassword(password: string): string {
 export async function authenticateUser(username: string, password: string) {
   console.log("🔐 Authentication attempt:", { username, passwordLength: password.length })
 
-  // Check if we're using environment variable credentials
+  // Get environment variables
   const env = getEnv()
   console.log("🌍 Environment check:", {
     hasAdminUsername: !!env.ADMIN_USERNAME,
@@ -44,37 +44,56 @@ export async function authenticateUser(username: string, password: string) {
 
   let isAuthenticated = false
 
-  // First check environment variable credentials if provided
+  // PRIORITY 1: Check environment variable credentials if provided
   if (env.ADMIN_USERNAME && env.ADMIN_PASSWORD) {
     console.log("🔑 Checking environment credentials...")
-    // Direct comparison with environment variables
+    // Direct comparison with environment variables (no hashing for env vars)
     isAuthenticated = username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD
     console.log("✅ Environment auth result:", isAuthenticated)
+
+    if (isAuthenticated) {
+      console.log("🎉 Authentication successful with environment variables!")
+
+      // Create a session token
+      const token = generateSessionToken()
+
+      // Store in a secure, HTTP-only cookie
+      cookies().set("admin-auth", "authenticated", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24, // 1 day
+        path: "/",
+        sameSite: "lax",
+      })
+
+      return { success: true }
+    }
   }
 
-  // If not authenticated with env vars, check database
-  if (!isAuthenticated) {
-    console.log("🗄️ Checking database credentials...")
+  // PRIORITY 2: Only check database if environment variables are not set or failed
+  if (!isAuthenticated && (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD)) {
+    console.log("🗄️ Checking database credentials (fallback)...")
     const user = await validateUser(username, password)
     isAuthenticated = !!user
     console.log("✅ Database auth result:", isAuthenticated)
-  }
 
-  if (isAuthenticated) {
-    console.log("🎉 Authentication successful!")
-    // Create a session token
-    const token = generateSessionToken()
+    if (isAuthenticated) {
+      console.log("🎉 Authentication successful with database credentials!")
 
-    // Store in a secure, HTTP-only cookie
-    cookies().set("admin-auth", "authenticated", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24, // 1 day
-      path: "/",
-      sameSite: "lax",
-    })
+      // Create a session token
+      const token = generateSessionToken()
 
-    return { success: true }
+      // Store in a secure, HTTP-only cookie
+      cookies().set("admin-auth", "authenticated", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24, // 1 day
+        path: "/",
+        sameSite: "lax",
+      })
+
+      return { success: true }
+    }
   }
 
   console.log("❌ Authentication failed")

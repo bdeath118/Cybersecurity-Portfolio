@@ -5,9 +5,11 @@ import { Badge } from "@/components/ui/badge"
 import { Flag, Trophy, Users, ChevronRight } from "lucide-react"
 import { getCTFEvents } from "@/lib/data"
 
-export const metadata = {
-  title: "CTF Events | Cyber Security Portfolio",
-  description: "View my participation in Capture The Flag cybersecurity competitions",
+export async function generateMetadata() {
+  return {
+    title: "CTF Events | Cyber Security Portfolio",
+    description: "View my participation in Capture The Flag cybersecurity competitions",
+  }
 }
 
 export default async function CTFPage() {

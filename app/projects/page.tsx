@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronRight } from "lucide-react"
 import { getProjects } from "@/lib/data"
 
-export const metadata = {
-  title: "Projects | Cyber Security Portfolio",
-  description: "Explore my cybersecurity projects and contributions",
+export async function generateMetadata() {
+  return {
+    title: "Projects | Cyber Security Portfolio",
+    description: "Explore my cybersecurity projects and contributions",
+  }
 }
 
 export default async function ProjectsPage() {

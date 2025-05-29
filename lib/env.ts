@@ -14,6 +14,12 @@ export interface Env {
   // Site configuration
   SITE_URL?: string
 
+  // LinkedIn Integration
+  LINKEDIN_PROFILE_URL?: string
+  CREDLY_USERNAME?: string
+  CANVAS_API_KEY?: string
+  CANVAS_USER_ID?: string
+
   // Node environment
   NODE_ENV: "development" | "production" | "test"
 }
@@ -35,25 +41,35 @@ export function getEnv(): Env {
     }
   }
 
-  // In production, ensure we have NEXTAUTH_URL
-  if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_URL) {
-    console.error("❌ NEXTAUTH_URL environment variable is required in production")
-    throw new Error("NEXTAUTH_URL environment variable is required in production")
+  // In production, ensure we have NEXTAUTH_URL or SITE_URL
+  if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_URL && !process.env.SITE_URL) {
+    console.error("❌ NEXTAUTH_URL or SITE_URL environment variable is required in production")
+    throw new Error("NEXTAUTH_URL or SITE_URL environment variable is required in production")
   }
+
+  // Determine site URL with your actual Vercel URL
+  const siteUrl =
+    process.env.SITE_URL || process.env.NEXTAUTH_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app"
 
   return {
     AUTH_SECRET: authSecret,
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL || siteUrl,
     ADMIN_USERNAME: process.env.ADMIN_USERNAME,
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
-    SITE_URL: process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app",
+    SITE_URL: siteUrl,
+    LINKEDIN_PROFILE_URL: process.env.LINKEDIN_PROFILE_URL,
+    CREDLY_USERNAME: process.env.CREDLY_USERNAME,
+    CANVAS_API_KEY: process.env.CANVAS_API_KEY,
+    CANVAS_USER_ID: process.env.CANVAS_USER_ID,
     NODE_ENV: (process.env.NODE_ENV as Env["NODE_ENV"]) || "development",
   }
 }
 
 // For client-side usage (only expose what's safe for the client)
 export function getClientEnv() {
+  const env = getEnv()
   return {
-    SITE_URL: process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app",
+    SITE_URL: env.SITE_URL,
+    NODE_ENV: env.NODE_ENV,
   }
 }

@@ -8,6 +8,8 @@ export interface Project {
   demoUrl?: string
   githubUrl?: string
   date: string
+  linkedinImported?: boolean
+  lastUpdated?: string
 }
 
 export interface Skill {
@@ -15,6 +17,9 @@ export interface Skill {
   name: string
   level: number
   category: string
+  linkedinImported?: boolean
+  endorsements?: number
+  lastUpdated?: string
 }
 
 export interface Certification {
@@ -26,6 +31,19 @@ export interface Certification {
   description: string
   logo?: string
   credentialUrl?: string
+}
+
+export interface DigitalBadge {
+  id: string
+  name: string
+  issuer: string
+  date: string
+  description: string
+  badgeUrl: string
+  verificationUrl?: string
+  platform: "linkedin" | "canvas" | "credly" | "other"
+  skills?: string[]
+  image?: string
 }
 
 export interface CTFEvent {
@@ -64,6 +82,7 @@ export interface SiteInfo {
   github?: string
   linkedin?: string
   twitter?: string
+  linkedinProfileUrl?: string
   theme?: {
     primaryColor: string
     secondaryColor: string
@@ -73,4 +92,50 @@ export interface SiteInfo {
   icon?: string
   backgroundImage?: string
   backgroundOpacity?: number
+  siteUrl?: string
+  autoImportSettings?: {
+    linkedinEnabled: boolean
+    badgesEnabled: boolean
+    lastImport?: string
+    importFrequency: "daily" | "weekly" | "manual"
+  }
+}
+
+export interface LinkedInProfile {
+  name: string
+  headline: string
+  summary: string
+  experience: LinkedInExperience[]
+  skills: LinkedInSkill[]
+  projects: LinkedInProject[]
+}
+
+export interface LinkedInExperience {
+  title: string
+  company: string
+  duration: string
+  description: string
+  skills?: string[]
+}
+
+export interface LinkedInSkill {
+  name: string
+  endorsements: number
+}
+
+export interface LinkedInProject {
+  name: string
+  description: string
+  url?: string
+  skills?: string[]
+  date?: string
+}
+
+export interface ImportSettings {
+  linkedinProfileUrl?: string
+  credlyUsername?: string
+  canvasApiKey?: string
+  autoImportEnabled: boolean
+  importFrequency: "daily" | "weekly" | "manual"
+  lastImport?: string
 }

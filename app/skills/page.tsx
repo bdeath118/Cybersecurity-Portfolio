@@ -2,9 +2,11 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getSkills } from "@/lib/data"
 
-export const metadata = {
-  title: "Skills | Cyber Security Portfolio",
-  description: "Explore my cybersecurity and technical skills",
+export async function generateMetadata() {
+  return {
+    title: "Skills | Cyber Security Portfolio",
+    description: "Explore my cybersecurity and technical skills",
+  }
 }
 
 export default async function SkillsPage() {

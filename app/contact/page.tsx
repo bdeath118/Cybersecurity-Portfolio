@@ -4,9 +4,11 @@ import { getSiteInfo } from "@/lib/data"
 import { Mail, Github, Linkedin, Twitter } from "lucide-react"
 import Link from "next/link"
 
-export const metadata = {
-  title: "Contact | Cyber Security Portfolio",
-  description: "Get in touch with me for cybersecurity consultations and collaborations",
+export async function generateMetadata() {
+  return {
+    title: "Contact | Cyber Security Portfolio",
+    description: "Get in touch with me for cybersecurity consultations and collaborations",
+  }
 }
 
 export default async function ContactPage() {

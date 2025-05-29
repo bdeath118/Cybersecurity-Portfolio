@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button"
 import { getCertifications } from "@/lib/data"
 import Link from "next/link"
 
-export const metadata = {
-  title: "Certifications | Cyber Security Portfolio",
-  description: "View my cybersecurity certifications and qualifications",
+export async function generateMetadata() {
+  return {
+    title: "Certifications | Cyber Security Portfolio",
+    description: "View my cybersecurity certifications and qualifications",
+  }
 }
 
 export default async function CertificationsPage() {

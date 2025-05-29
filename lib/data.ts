@@ -1,4 +1,4 @@
-import type { Project, Skill, Certification, CTFEvent, User, SiteInfo } from "./types"
+import type { Project, Skill, Certification, CTFEvent, User, SiteInfo, DigitalBadge } from "./types"
 import { hashPassword } from "./auth"
 
 // Sample data
@@ -62,6 +62,33 @@ const certifications: Certification[] = [
   },
 ]
 
+const digitalBadges: DigitalBadge[] = [
+  {
+    id: "1",
+    name: "Cybersecurity Fundamentals",
+    issuer: "IBM",
+    date: "2024-01-10",
+    description: "Demonstrates understanding of cybersecurity principles and best practices",
+    badgeUrl: "/placeholder.svg?height=80&width=80",
+    verificationUrl: "https://credly.com/badges/example",
+    platform: "credly",
+    skills: ["Cybersecurity", "Risk Management"],
+    image: "/placeholder.svg?height=80&width=80",
+  },
+  {
+    id: "2",
+    name: "Ethical Hacking Essentials",
+    issuer: "EC-Council",
+    date: "2023-12-15",
+    description: "Foundational knowledge in ethical hacking methodologies",
+    badgeUrl: "/placeholder.svg?height=80&width=80",
+    verificationUrl: "https://credly.com/badges/example2",
+    platform: "credly",
+    skills: ["Penetration Testing", "Vulnerability Assessment"],
+    image: "/placeholder.svg?height=80&width=80",
+  },
+]
+
 const ctfEvents: CTFEvent[] = [
   {
     id: "1",
@@ -99,6 +126,7 @@ let siteInfo: SiteInfo = {
   github: "https://github.com/johndoe",
   linkedin: "https://linkedin.com/in/johndoe",
   twitter: "https://twitter.com/johndoe",
+  linkedinProfileUrl: "https://linkedin.com/in/johndoe",
   theme: {
     primaryColor: "#3b82f6",
     secondaryColor: "#1e40af",
@@ -108,6 +136,12 @@ let siteInfo: SiteInfo = {
   icon: "/images/avatar-photo.jpg",
   backgroundImage: "/images/background.jpeg",
   backgroundOpacity: 80,
+  siteUrl: process.env.SITE_URL || "https://cybersecurity-portfolio-bdeath118.vercel.app",
+  autoImportSettings: {
+    linkedinEnabled: false,
+    badgesEnabled: false,
+    importFrequency: "daily",
+  },
 }
 
 // Helper function to generate IDs
@@ -136,6 +170,33 @@ export async function updateSiteInfo(updates: Partial<SiteInfo>): Promise<SiteIn
   }
 
   return siteInfo
+}
+
+// Digital Badge functions
+export async function getDigitalBadges(): Promise<DigitalBadge[]> {
+  return digitalBadges
+}
+
+export async function addDigitalBadge(badge: Omit<DigitalBadge, "id">): Promise<DigitalBadge> {
+  const newBadge = { ...badge, id: generateId() }
+  digitalBadges.push(newBadge)
+  return newBadge
+}
+
+export async function updateDigitalBadge(id: string, updates: Partial<DigitalBadge>): Promise<DigitalBadge | null> {
+  const index = digitalBadges.findIndex((b) => b.id === id)
+  if (index === -1) return null
+
+  digitalBadges[index] = { ...digitalBadges[index], ...updates }
+  return digitalBadges[index]
+}
+
+export async function deleteDigitalBadge(id: string): Promise<boolean> {
+  const index = digitalBadges.findIndex((b) => b.id === id)
+  if (index === -1) return false
+
+  digitalBadges.splice(index, 1)
+  return true
 }
 
 // Project functions
