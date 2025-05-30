@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSiteInfo } from "@/lib/data"
-import { Mail, Github, Linkedin, Twitter } from "lucide-react"
+import { Mail, Github, Linkedin } from "lucide-react"
 import Link from "next/link"
 
 export async function generateMetadata() {
@@ -77,25 +77,6 @@ export default async function ContactPage() {
                     className="text-muted-foreground hover:text-primary"
                   >
                     {siteInfo.linkedin.replace("https://linkedin.com/in/", "")}
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {siteInfo.twitter && (
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-primary/10 rounded-full">
-                  <Twitter className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-medium">Twitter</h3>
-                  <Link
-                    href={siteInfo.twitter}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    {siteInfo.twitter.replace("https://twitter.com/", "@")}
                   </Link>
                 </div>
               </div>

@@ -31,6 +31,8 @@ export interface Certification {
   description: string
   logo?: string
   credentialUrl?: string
+  verificationStatus?: "verified" | "pending" | "expired"
+  autoImported?: boolean
 }
 
 export interface DigitalBadge {
@@ -57,6 +59,9 @@ export interface CTFEvent {
   flagsCaptured: number
   description?: string
   challenges?: CTFChallenge[]
+  platform?: "ctftime" | "picoctf" | "tryhackme" | "hackthebox" | "other"
+  points?: number
+  writeupUrl?: string
 }
 
 export interface CTFChallenge {
@@ -66,6 +71,43 @@ export interface CTFChallenge {
   points: number
   solved: boolean
   description?: string
+}
+
+export interface BugBountyFinding {
+  id: string
+  title: string
+  platform: "hackerone" | "bugcrowd" | "intigriti" | "other"
+  severity: "critical" | "high" | "medium" | "low" | "info"
+  status: "resolved" | "triaged" | "duplicate" | "not-applicable"
+  bounty?: number
+  date: string
+  description: string
+  cve?: string
+  reportUrl?: string
+  company: string
+}
+
+export interface SecurityArticle {
+  id: string
+  title: string
+  platform: "medium" | "personal" | "dev.to" | "hashnode" | "other"
+  url: string
+  publishedDate: string
+  summary: string
+  tags: string[]
+  readTime?: number
+  views?: number
+  claps?: number
+}
+
+export interface OSINTCapability {
+  id: string
+  name: string
+  category: "reconnaissance" | "social-media" | "domain-analysis" | "threat-intelligence" | "other"
+  description: string
+  tools: string[]
+  examples?: string[]
+  proficiencyLevel: number
 }
 
 export interface User {
@@ -81,7 +123,6 @@ export interface SiteInfo {
   email: string
   github?: string
   linkedin?: string
-  twitter?: string
   linkedinProfileUrl?: string
   theme?: {
     primaryColor: string
@@ -138,4 +179,27 @@ export interface ImportSettings {
   autoImportEnabled: boolean
   importFrequency: "daily" | "weekly" | "manual"
   lastImport?: string
+  // CTF Platform Settings
+  ctftimeUsername?: string
+  picoctfUsername?: string
+  tryhackmeUsername?: string
+  hacktheboxUsername?: string
+  // Bug Bounty Platform Settings
+  hackeroneUsername?: string
+  bugcrowdUsername?: string
+  // Blog Platform Settings
+  mediumUsername?: string
+  personalBlogRss?: string
+  devtoUsername?: string
+}
+
+export interface CyberSecurityIntegration {
+  id: string
+  platform: string
+  username?: string
+  apiKey?: string
+  isConnected: boolean
+  lastSync?: string
+  syncEnabled: boolean
+  dataTypes: string[]
 }

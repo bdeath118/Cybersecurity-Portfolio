@@ -1,41 +1,27 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { rateLimit } from "./lib/rate-limit"
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
 
-  // Apply rate limiting to API routes
-  if (pathname.startsWith("/api/")) {
-    try {
-      await rateLimit(request)
-    } catch (error) {
-      return new NextResponse("Too Many Requests", { status: 429 })
-    }
-  }
+  // Only protect dashboard routes
+  if (path.startsWith("/admin/dashboard")) {
+    const authCookie = request.cookies.get("admin-auth")
 
-  // Protect admin routes
-  if (pathname.startsWith("/admin") && pathname !== "/admin") {
-    const authCookie = request.cookies.get("auth-session")
+    console.log("Middleware checking auth for:", path)
+    console.log("Auth cookie present:", !!authCookie)
 
-    if (!authCookie) {
+    if (!authCookie || authCookie.value !== "authenticated") {
+      console.log("Redirecting to login page")
       return NextResponse.redirect(new URL("/admin", request.url))
     }
 
-    try {
-      // Simple session validation
-      const sessionData = JSON.parse(authCookie.value)
-      if (!sessionData.userId || !sessionData.username) {
-        return NextResponse.redirect(new URL("/admin", request.url))
-      }
-    } catch {
-      return NextResponse.redirect(new URL("/admin", request.url))
-    }
+    console.log("Authentication successful, proceeding to dashboard")
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/:path*"],
+  matcher: ["/admin/dashboard/:path*"],
 }

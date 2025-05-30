@@ -280,11 +280,6 @@ export function SiteInfoManager() {
                   <Input id="linkedin" name="linkedin" defaultValue={siteInfo.linkedin} />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="twitter">Twitter URL</Label>
-                  <Input id="twitter" name="twitter" defaultValue={siteInfo.twitter} />
-                </div>
-
                 <Button type="submit" className="w-full" disabled={isSaving}>
                   {isSaving ? "Saving..." : "Save Changes"}
                 </Button>

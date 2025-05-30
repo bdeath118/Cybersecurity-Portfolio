@@ -7,16 +7,41 @@ import { ChevronRight } from "lucide-react"
 import type { Project } from "@/lib/types"
 
 interface ProjectsShowcaseProps {
-  projects: Project[]
+  projects?: Project[]
+  featured?: boolean
+  limit?: number
 }
 
-export function ProjectsShowcase({ projects }: ProjectsShowcaseProps) {
+export function ProjectsShowcase({ projects = [], featured = false, limit }: ProjectsShowcaseProps) {
+  // Handle empty or undefined projects
+  if (!projects || projects.length === 0) {
+    return (
+      <section className="py-12 md:py-24">
+        <div className="container px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+            <div className="space-y-2">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Featured Projects</h2>
+              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                No projects available yet. Check back soon!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // Apply limit if specified
+  const displayProjects = limit ? projects.slice(0, limit) : projects
+
   return (
     <section className="py-12 md:py-24">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Featured Projects</h2>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+              {featured ? "Featured Projects" : "Projects"}
+            </h2>
             <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
               Explore my recent cybersecurity projects and contributions
             </p>
@@ -24,7 +49,7 @@ export function ProjectsShowcase({ projects }: ProjectsShowcaseProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
+          {displayProjects.map((project) => (
             <Card key={project.id} className="overflow-hidden">
               <div className="relative h-48 w-full">
                 <Image
@@ -40,11 +65,11 @@ export function ProjectsShowcase({ projects }: ProjectsShowcaseProps) {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {project.technologies.map((tech) => (
+                  {project.technologies?.map((tech) => (
                     <Badge key={tech} variant="secondary">
                       {tech}
                     </Badge>
-                  ))}
+                  )) || null}
                 </div>
               </CardContent>
               <CardFooter>
@@ -58,11 +83,13 @@ export function ProjectsShowcase({ projects }: ProjectsShowcaseProps) {
           ))}
         </div>
 
-        <div className="flex justify-center mt-12">
-          <Link href="/projects">
-            <Button size="lg">View All Projects</Button>
-          </Link>
-        </div>
+        {!featured && (
+          <div className="flex justify-center mt-12">
+            <Link href="/projects">
+              <Button size="lg">View All Projects</Button>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   )

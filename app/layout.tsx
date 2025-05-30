@@ -9,15 +9,48 @@ import { getSiteInfo } from "@/lib/data"
 const inter = Inter({ subsets: ["latin"] })
 
 export async function generateMetadata() {
-  const siteInfo = await getSiteInfo()
+  try {
+    const siteInfo = await getSiteInfo()
 
-  return {
-    title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
-    description:
-      siteInfo.description || "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
-    icons: {
-      icon: siteInfo.icon || "/favicon.ico",
-    },
+    return {
+      title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
+      description:
+        siteInfo.description || "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+      icons: {
+        icon: siteInfo.icon || "/favicon.ico",
+      },
+      openGraph: {
+        title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
+        description:
+          siteInfo.description ||
+          "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+        type: "website",
+        images: [
+          {
+            url: siteInfo.backgroundImage || "/images/background.jpeg",
+            width: 1200,
+            height: 630,
+            alt: "Cybersecurity Portfolio",
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
+        description:
+          siteInfo.description ||
+          "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+      },
+    }
+  } catch (error) {
+    console.error("Error generating metadata:", error)
+    return {
+      title: "Cyber Security Portfolio",
+      description: "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+      icons: {
+        icon: "/favicon.ico",
+      },
+    }
   }
 }
 

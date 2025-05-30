@@ -69,6 +69,17 @@ const defaultSiteInfo: SiteInfo = {
   },
 }
 
+// Generic data read/write functions for backward compatibility
+export async function readData<T>(filename: string, defaultValue: T): Promise<T> {
+  const filePath = path.join(DATA_DIR, `${filename}.json`)
+  return readJsonFile(filePath, defaultValue)
+}
+
+export async function writeData<T>(filename: string, data: T): Promise<void> {
+  const filePath = path.join(DATA_DIR, `${filename}.json`)
+  return writeJsonFile(filePath, data)
+}
+
 // Projects
 export async function getProjects(): Promise<Project[]> {
   return readJsonFile(PROJECTS_FILE, [])

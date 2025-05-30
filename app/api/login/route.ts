@@ -1,43 +1,42 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { loginUser } from "@/lib/data"
+import { cookies } from "next/headers"
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password } = await request.json()
+    const body = await request.json()
+    const { username, password } = body
 
-    console.log("Login API called with:", { username, password: "***" })
+    console.log("Login API called with username:", username)
 
     if (!username || !password) {
-      return NextResponse.json({ error: "Username and password are required" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Username and password are required" }, { status: 400 })
     }
 
-    const isValid = await loginUser(username, password)
+    // Check against environment variables
+    const adminUsername = process.env.ADMIN_USERNAME || "admin"
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123"
 
-    if (isValid) {
-      // Create a simple session
-      const sessionData = {
-        userId: "admin",
-        username,
-        timestamp: Date.now(),
-      }
+    console.log("Checking credentials against:", { adminUsername })
 
-      const response = NextResponse.json({ success: true })
+    if (username === adminUsername && password === adminPassword) {
+      console.log("Authentication successful")
 
-      // Set session cookie
-      response.cookies.set("auth-session", JSON.stringify(sessionData), {
+      // Set the authentication cookie
+      cookies().set("admin-auth", "authenticated", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24, // 24 hours
+        maxAge: 60 * 60 * 24, // 1 day
         path: "/",
         sameSite: "lax",
       })
 
-      return response
-    } else {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+      return NextResponse.json({ success: true })
     }
+
+    console.log("Authentication failed")
+    return NextResponse.json({ success: false, message: "Invalid username or password" }, { status: 401 })
   } catch (error) {
     console.error("Login error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "An error occurred during login" }, { status: 500 })
   }
 }
