@@ -12,7 +12,6 @@ export async function generateMetadata() {
 export default async function SkillsPage() {
   const skills = await getSkills()
 
-  // Group skills by category
   const categories = [...new Set(skills.map((skill) => skill.category))]
   const skillsByCategory = categories.reduce(
     (acc, category) => {
@@ -33,31 +32,38 @@ export default async function SkillsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue={categories[0]} className="max-w-4xl mx-auto">
-        <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-8">
-          {categories.map((category) => (
-            <TabsTrigger key={category} value={category}>
-              {category}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {categories.length > 0 ? (
+        <Tabs defaultValue={categories[0]} className="max-w-4xl mx-auto">
+          <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-8">
+            {categories.map((category) => (
+              <TabsTrigger key={category} value={category}>
+                {category}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {categories.map((category) => (
-          <TabsContent key={category} value={category} className="space-y-8">
-            <div className="grid gap-6">
-              {skillsByCategory[category].map((skill) => (
-                <div key={skill.id} className="space-y-2">
-                  <div className="flex justify-between">
-                    <h3 className="font-medium">{skill.name}</h3>
-                    <span>{skill.level}%</span>
+          {categories.map((category) => (
+            <TabsContent key={category} value={category} className="space-y-8">
+              <div className="grid gap-6">
+                {skillsByCategory[category].map((skill) => (
+                  <div key={skill.id} className="space-y-2">
+                    <div className="flex justify-between">
+                      <h3 className="font-medium">{skill.name}</h3>
+                      <span>{skill.level}%</span>
+                    </div>
+                    <Progress value={skill.level} className="h-2" />
                   </div>
-                  <Progress value={skill.level} className="h-2" />
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+                ))}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      ) : (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium mb-2">No skills added yet</h3>
+          <p className="text-muted-foreground">Skills will appear here once they are added through the admin panel.</p>
+        </div>
+      )}
     </div>
   )
 }

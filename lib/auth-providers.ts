@@ -47,8 +47,14 @@ export function clearToken(provider: string) {
 // Helper function to get stored credentials
 async function getStoredCredentials(platform: string) {
   try {
+    console.log(`Attempting to get stored credentials for ${platform}`)
+
+    // Import the function dynamically to avoid circular dependencies
     const { getDecryptedCredentials } = await import("@/app/api/admin/credentials/route")
-    return await getDecryptedCredentials(platform)
+    const credentials = await getDecryptedCredentials(platform)
+
+    console.log(`Credentials for ${platform}:`, credentials ? "Found" : "Not found")
+    return credentials
   } catch (error) {
     console.error(`Error getting ${platform} credentials:`, error)
     return null
@@ -59,6 +65,104 @@ async function getStoredCredentials(platform: string) {
 function getBaseUrl() {
   const env = getEnv()
   return env.SITE_URL || (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : null) || "http://localhost:3000"
+}
+
+// LinkedIn authentication provider
+export class LinkedInAuthProvider {
+  private static readonly AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization"
+  private static readonly TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
+  private static readonly API_BASE = "https://api.linkedin.com/v2"
+
+  private redirectUri = `${getBaseUrl()}/api/auth/linkedin/callback`
+
+  // Get login URL
+  async getLoginUrl(): Promise<string | null> {
+    try {
+      console.log("LinkedInAuthProvider: Getting login URL")
+      console.log("Redirect URI:", this.redirectUri)
+
+      const credentials = await getStoredCredentials("linkedin")
+
+      if (!credentials) {
+        console.error("LinkedIn credentials not found")
+        throw new Error("LinkedIn credentials not configured")
+      }
+
+      if (!credentials.clientId) {
+        console.error("LinkedIn client ID not found")
+        throw new Error("LinkedIn client ID not configured")
+      }
+
+      console.log("LinkedIn credentials found, generating OAuth URL")
+
+      const params = new URLSearchParams({
+        client_id: credentials.clientId,
+        redirect_uri: this.redirectUri,
+        response_type: "code",
+        scope: "r_liteprofile r_emailaddress",
+        state: crypto.randomUUID(), // Add state for security
+      })
+
+      const loginUrl = `${LinkedInAuthProvider.AUTH_URL}?${params.toString()}`
+      console.log("LinkedIn OAuth URL generated successfully")
+
+      return loginUrl
+    } catch (error) {
+      console.error("Error in LinkedInAuthProvider.getLoginUrl:", error)
+      throw error
+    }
+  }
+
+  // Exchange code for token
+  async getToken(code: string): Promise<TokenData> {
+    const credentials = await getStoredCredentials("linkedin")
+    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
+      throw new Error("LinkedIn credentials not configured")
+    }
+
+    try {
+      const response = await axios.post(
+        LinkedInAuthProvider.TOKEN_URL,
+        new URLSearchParams({
+          client_id: credentials.clientId,
+          client_secret: credentials.clientSecret,
+          code,
+          grant_type: "authorization_code",
+          redirect_uri: this.redirectUri,
+        }).toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        },
+      )
+
+      return {
+        accessToken: response.data.access_token,
+        expiresAt: Date.now() + response.data.expires_in * 1000,
+        provider: "linkedin",
+      }
+    } catch (error) {
+      console.error("Error getting LinkedIn token:", error)
+      throw new Error("Failed to authenticate with LinkedIn")
+    }
+  }
+
+  // Get user profile with token
+  async getUserProfile(accessToken: string): Promise<any> {
+    try {
+      const response = await axios.get(`${LinkedInAuthProvider.API_BASE}/me`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      return response.data
+    } catch (error) {
+      console.error("Error fetching LinkedIn profile:", error)
+      throw new Error("Failed to fetch profile from LinkedIn")
+    }
+  }
 }
 
 // Credly authentication provider
@@ -115,33 +219,6 @@ export class CredlyAuthProvider {
     }
   }
 
-  // Refresh token
-  async refreshToken(refreshToken: string): Promise<TokenData> {
-    const credentials = await getStoredCredentials("credly")
-    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
-      throw new Error("Credly credentials not configured")
-    }
-
-    try {
-      const response = await axios.post(CredlyAuthProvider.TOKEN_URL, {
-        client_id: credentials.clientId,
-        client_secret: credentials.clientSecret,
-        refresh_token: refreshToken,
-        grant_type: "refresh_token",
-      })
-
-      return {
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
-        expiresAt: Date.now() + response.data.expires_in * 1000,
-        provider: "credly",
-      }
-    } catch (error) {
-      console.error("Error refreshing Credly token:", error)
-      throw new Error("Failed to refresh Credly token")
-    }
-  }
-
   // Get user badges with token
   async getUserBadges(accessToken: string): Promise<any[]> {
     try {
@@ -172,7 +249,6 @@ export class CanvasAuthProvider {
     try {
       console.log("Getting Canvas login URL")
 
-      // Get stored credentials
       const credentials = await getStoredCredentials("canvas")
       console.log("Canvas credentials retrieved:", credentials ? "Found" : "Not found")
 
@@ -181,7 +257,6 @@ export class CanvasAuthProvider {
         return null
       }
 
-      // Create OAuth URL
       const params = new URLSearchParams({
         client_id: credentials.clientId,
         redirect_uri: this.redirectUri,
@@ -227,33 +302,6 @@ export class CanvasAuthProvider {
     }
   }
 
-  // Refresh token
-  async refreshToken(refreshToken: string): Promise<TokenData> {
-    const credentials = await getStoredCredentials("canvas")
-    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
-      throw new Error("Canvas credentials not configured")
-    }
-
-    try {
-      const response = await axios.post(CanvasAuthProvider.TOKEN_URL, {
-        client_id: credentials.clientId,
-        client_secret: credentials.clientSecret,
-        refresh_token: refreshToken,
-        grant_type: "refresh_token",
-      })
-
-      return {
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
-        expiresAt: Date.now() + response.data.expires_in * 1000,
-        provider: "canvas",
-      }
-    } catch (error) {
-      console.error("Error refreshing Canvas token:", error)
-      throw new Error("Failed to refresh Canvas token")
-    }
-  }
-
   // Get user badges with token
   async getUserBadges(accessToken: string, userId: string): Promise<any[]> {
     if (!userId) {
@@ -272,84 +320,6 @@ export class CanvasAuthProvider {
     } catch (error) {
       console.error("Error fetching Canvas badges:", error)
       throw new Error("Failed to fetch badges from Canvas")
-    }
-  }
-}
-
-// LinkedIn authentication provider
-export class LinkedInAuthProvider {
-  private static readonly AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization"
-  private static readonly TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
-  private static readonly API_BASE = "https://api.linkedin.com/v2"
-
-  private redirectUri = `${getBaseUrl()}/api/auth/linkedin/callback`
-
-  // Get login URL
-  async getLoginUrl(): Promise<string | null> {
-    const credentials = await getStoredCredentials("linkedin")
-    if (!credentials || !credentials.clientId) {
-      console.error("LinkedIn credentials not configured")
-      return null
-    }
-
-    const params = new URLSearchParams({
-      client_id: credentials.clientId,
-      redirect_uri: this.redirectUri,
-      response_type: "code",
-      scope: "r_liteprofile r_emailaddress r_basicprofile",
-    })
-
-    return `${LinkedInAuthProvider.AUTH_URL}?${params.toString()}`
-  }
-
-  // Exchange code for token
-  async getToken(code: string): Promise<TokenData> {
-    const credentials = await getStoredCredentials("linkedin")
-    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
-      throw new Error("LinkedIn credentials not configured")
-    }
-
-    try {
-      const response = await axios.post(
-        LinkedInAuthProvider.TOKEN_URL,
-        new URLSearchParams({
-          client_id: credentials.clientId,
-          client_secret: credentials.clientSecret,
-          code,
-          grant_type: "authorization_code",
-          redirect_uri: this.redirectUri,
-        }).toString(),
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        },
-      )
-
-      return {
-        accessToken: response.data.access_token,
-        expiresAt: Date.now() + response.data.expires_in * 1000,
-        provider: "linkedin",
-      }
-    } catch (error) {
-      console.error("Error getting LinkedIn token:", error)
-      throw new Error("Failed to authenticate with LinkedIn")
-    }
-  }
-
-  // Get user profile with token
-  async getUserProfile(accessToken: string): Promise<any> {
-    try {
-      const response = await axios.get(`${LinkedInAuthProvider.API_BASE}/me`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-
-      return response.data
-    } catch (error) {
-      console.error("Error fetching LinkedIn profile:", error)
-      throw new Error("Failed to fetch profile from LinkedIn")
     }
   }
 }

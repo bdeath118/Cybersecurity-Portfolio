@@ -74,6 +74,13 @@ export default async function CertificationsPage() {
           </Card>
         ))}
       </div>
+
+      {certifications.length === 0 && (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium mb-2">No certifications yet</h3>
+          <p className="text-muted-foreground">Certifications will appear here once they are added.</p>
+        </div>
+      )}
     </div>
   )
 }

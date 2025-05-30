@@ -1,14 +1,16 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Flag, Trophy, Users, Calendar, Clock } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Calendar, Trophy, Users, Flag, ArrowLeft, ExternalLink } from "lucide-react"
 import { getCTFEvent } from "@/lib/data"
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   try {
     const event = await getCTFEvent(params.id)
+
     if (!event) {
       return {
         title: "CTF Event Not Found | Cyber Security Portfolio",
@@ -17,17 +19,22 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
     }
 
     return {
-      title: `${event.name} | CTF Events`,
-      description: event.description || `CTF event: ${event.name}`,
+      title: `${event.name} CTF | Cyber Security Portfolio`,
+      description: event.description
+        ? event.description.substring(0, 160)
+        : `Details about the ${event.name} CTF competition`,
       openGraph: {
-        title: event.name,
-        description: event.description || `CTF event: ${event.name}`,
+        title: `${event.name} CTF`,
+        description: event.description
+          ? event.description.substring(0, 160)
+          : `Details about the ${event.name} CTF competition`,
       },
     }
   } catch (error) {
+    console.error("Error generating metadata:", error)
     return {
       title: "CTF Event | Cyber Security Portfolio",
-      description: "CTF event details",
+      description: "View Capture The Flag event details",
     }
   }
 }
@@ -40,129 +47,127 @@ export default async function CTFEventPage({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="container py-12 md:py-24 px-4 md:px-6">
-      <div className="mb-8">
-        <Link href="/ctf">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to CTF Events
-          </Button>
-        </Link>
-      </div>
+    <div className="container py-12 px-4">
+      <Link href="/ctf" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to CTF Events
+      </Link>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">{event.name}</h1>
-            <div className="flex items-center gap-4 mt-4 text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>{event.date}</span>
-              </div>
-              <Badge
-                variant={
-                  event.difficulty === "Easy" ? "outline" : event.difficulty === "Medium" ? "secondary" : "destructive"
-                }
-              >
-                {event.difficulty}
-              </Badge>
-            </div>
-          </div>
-
-          {event.description && (
-            <div className="prose prose-gray dark:prose-invert max-w-none">
-              <p>{event.description}</p>
-            </div>
-          )}
-
-          {event.challenges && event.challenges.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Challenges Completed</CardTitle>
-                <CardDescription>Individual challenges solved during this CTF</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  {event.challenges.map((challenge, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">{challenge.name}</h4>
-                        <p className="text-sm text-muted-foreground">{challenge.category}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{challenge.points} pts</div>
-                        <Badge variant="outline" className="text-xs">
-                          {challenge.difficulty}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold">{event.name}</h1>
+          <Badge
+            variant={
+              event.difficulty === "Easy" ? "outline" : event.difficulty === "Medium" ? "secondary" : "destructive"
+            }
+            className="text-sm"
+          >
+            {event.difficulty}
+          </Badge>
         </div>
 
-        <div className="space-y-6">
+        <div className="flex items-center text-muted-foreground mb-8">
+          <Calendar className="h-4 w-4 mr-2" />
+          <span>{event.date}</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
-            <CardHeader>
-              <CardTitle>Event Statistics</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
+                Ranking
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">Team</div>
-                  <div className="text-sm text-muted-foreground">{event.team}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Trophy className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">Final Rank</div>
-                  <div className="text-sm text-muted-foreground">
-                    {event.rank} of {event.totalTeams}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Flag className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">Flags Captured</div>
-                  <div className="text-sm text-muted-foreground">{event.flagsCaptured}</div>
-                </div>
-              </div>
-
-              {event.duration && (
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <div className="font-medium">Duration</div>
-                    <div className="text-sm text-muted-foreground">{event.duration}</div>
-                  </div>
-                </div>
-              )}
+            <CardContent>
+              <p className="text-2xl font-bold">
+                {event.rank} <span className="text-sm font-normal text-muted-foreground">of {event.totalTeams}</span>
+              </p>
             </CardContent>
           </Card>
 
-          {event.writeupUrl && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Resources</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Link href={event.writeupUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="w-full gap-2">
-                    <Flag className="h-4 w-4" />
-                    View Writeup
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Users className="h-4 w-4 mr-2 text-blue-500" />
+                Team
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{event.team}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Flag className="h-4 w-4 mr-2 text-green-500" />
+                Flags Captured
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{event.flagsCaptured}</p>
+            </CardContent>
+          </Card>
         </div>
+
+        {event.description && (
+          <div className="prose dark:prose-invert max-w-none mb-8">
+            <h2 className="text-2xl font-bold mb-4">Event Description</h2>
+            {event.description.split("\n\n").map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
+            ))}
+          </div>
+        )}
+
+        {event.challenges && event.challenges.length > 0 && (
+          <>
+            <h2 className="text-2xl font-bold mb-4">Challenges Solved</h2>
+            <div className="space-y-4 mb-8">
+              {event.challenges.map((challenge, index) => (
+                <Card key={index}>
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold">{challenge.name}</h3>
+                      <Badge>{challenge.category}</Badge>
+                    </div>
+                    <p className="text-muted-foreground mb-4">{challenge.description}</p>
+                    {challenge.points && (
+                      <div className="text-sm">
+                        <span className="font-medium">Points:</span> {challenge.points}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
+
+        {event.learnings && event.learnings.length > 0 && (
+          <>
+            <h2 className="text-2xl font-bold mb-4">Key Learnings</h2>
+            <ul className="space-y-2 mb-8">
+              {event.learnings.map((learning, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="mr-2 text-primary">•</span>
+                  <span>{learning}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        <Separator className="my-8" />
+
+        {event.ctfUrl && (
+          <Link href={event.ctfUrl} target="_blank" rel="noopener noreferrer">
+            <Button className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Visit CTF Platform
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   )

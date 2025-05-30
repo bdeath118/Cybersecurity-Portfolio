@@ -75,6 +75,13 @@ export default async function CTFPage() {
           </Card>
         ))}
       </div>
+
+      {ctfEvents.length === 0 && (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium mb-2">No CTF events yet</h3>
+          <p className="text-muted-foreground">CTF events will appear here once they are added.</p>
+        </div>
+      )}
     </div>
   )
 }

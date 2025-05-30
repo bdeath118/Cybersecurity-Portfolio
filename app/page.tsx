@@ -29,10 +29,8 @@ export async function generateMetadata() {
 
 export default async function Home() {
   try {
-    // Initialize the application
     await initializeApplication()
 
-    // Fetch all required data
     const [siteInfo, projects, skills, digitalBadges] = await Promise.all([
       getSiteInfo(),
       getProjects(),
@@ -63,7 +61,6 @@ export default async function Home() {
   } catch (error) {
     console.error("Error loading homepage:", error)
 
-    // Fallback content if data loading fails
     return (
       <main className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
