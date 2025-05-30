@@ -58,7 +58,7 @@ async function getStoredCredentials(platform: string) {
 // Get base URL for the application
 function getBaseUrl() {
   const env = getEnv()
-  return env.SITE_URL || `https://${env.VERCEL_URL}` || "https://cybersecurity-portfolio-bdeath118.vercel.app"
+  return env.SITE_URL || (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : null) || "http://localhost:3000"
 }
 
 // Credly authentication provider
@@ -72,7 +72,10 @@ export class CredlyAuthProvider {
   // Get login URL
   async getLoginUrl(): Promise<string | null> {
     const credentials = await getStoredCredentials("credly")
-    if (!credentials) return null
+    if (!credentials || !credentials.clientId) {
+      console.error("Credly credentials not configured")
+      return null
+    }
 
     const params = new URLSearchParams({
       client_id: credentials.clientId,
@@ -87,7 +90,7 @@ export class CredlyAuthProvider {
   // Exchange code for token
   async getToken(code: string): Promise<TokenData> {
     const credentials = await getStoredCredentials("credly")
-    if (!credentials) {
+    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
       throw new Error("Credly credentials not configured")
     }
 
@@ -115,7 +118,7 @@ export class CredlyAuthProvider {
   // Refresh token
   async refreshToken(refreshToken: string): Promise<TokenData> {
     const credentials = await getStoredCredentials("credly")
-    if (!credentials) {
+    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
       throw new Error("Credly credentials not configured")
     }
 
@@ -166,23 +169,40 @@ export class CanvasAuthProvider {
 
   // Get login URL
   async getLoginUrl(): Promise<string | null> {
-    const credentials = await getStoredCredentials("canvas")
-    if (!credentials) return null
+    try {
+      console.log("Getting Canvas login URL")
 
-    const params = new URLSearchParams({
-      client_id: credentials.clientId,
-      redirect_uri: this.redirectUri,
-      response_type: "code",
-      scope: "url:GET|/api/v1/users/:user_id/badges",
-    })
+      // Get stored credentials
+      const credentials = await getStoredCredentials("canvas")
+      console.log("Canvas credentials retrieved:", credentials ? "Found" : "Not found")
 
-    return `${CanvasAuthProvider.AUTH_URL}?${params.toString()}`
+      if (!credentials || !credentials.clientId) {
+        console.error("Canvas credentials not configured or missing client ID")
+        return null
+      }
+
+      // Create OAuth URL
+      const params = new URLSearchParams({
+        client_id: credentials.clientId,
+        redirect_uri: this.redirectUri,
+        response_type: "code",
+        scope: "url:GET|/api/v1/users/:user_id/badges",
+      })
+
+      const loginUrl = `${CanvasAuthProvider.AUTH_URL}?${params.toString()}`
+      console.log("Canvas login URL generated:", loginUrl)
+
+      return loginUrl
+    } catch (error) {
+      console.error("Error generating Canvas login URL:", error)
+      return null
+    }
   }
 
   // Exchange code for token
   async getToken(code: string): Promise<TokenData> {
     const credentials = await getStoredCredentials("canvas")
-    if (!credentials) {
+    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
       throw new Error("Canvas credentials not configured")
     }
 
@@ -210,7 +230,7 @@ export class CanvasAuthProvider {
   // Refresh token
   async refreshToken(refreshToken: string): Promise<TokenData> {
     const credentials = await getStoredCredentials("canvas")
-    if (!credentials) {
+    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
       throw new Error("Canvas credentials not configured")
     }
 
@@ -236,6 +256,11 @@ export class CanvasAuthProvider {
 
   // Get user badges with token
   async getUserBadges(accessToken: string, userId: string): Promise<any[]> {
+    if (!userId) {
+      console.error("Canvas user ID not provided")
+      throw new Error("Canvas user ID is required")
+    }
+
     try {
       const response = await axios.get(`${CanvasAuthProvider.API_BASE}/users/${userId}/badges`, {
         headers: {
@@ -262,7 +287,10 @@ export class LinkedInAuthProvider {
   // Get login URL
   async getLoginUrl(): Promise<string | null> {
     const credentials = await getStoredCredentials("linkedin")
-    if (!credentials) return null
+    if (!credentials || !credentials.clientId) {
+      console.error("LinkedIn credentials not configured")
+      return null
+    }
 
     const params = new URLSearchParams({
       client_id: credentials.clientId,
@@ -277,7 +305,7 @@ export class LinkedInAuthProvider {
   // Exchange code for token
   async getToken(code: string): Promise<TokenData> {
     const credentials = await getStoredCredentials("linkedin")
-    if (!credentials) {
+    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
       throw new Error("LinkedIn credentials not configured")
     }
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield, AlertCircle } from "lucide-react"
 
 export default function AdminLoginPage() {
@@ -17,13 +18,14 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
     setIsLoading(true)
+    setError("")
 
     try {
-      console.log("Submitting login form...")
+      console.log("Attempting login with:", { username, password: "***" })
+
       const response = await fetch("/api/login", {
         method: "POST",
         headers: {
@@ -32,46 +34,39 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ username, password }),
       })
 
-      const result = await response.json()
-      console.log("Login response:", result)
+      console.log("Login response status:", response.status)
+      const data = await response.json()
+      console.log("Login response data:", data)
 
-      if (result.success) {
-        console.log("Login successful, redirecting...")
+      if (response.ok && data.success) {
+        console.log("Login successful, redirecting to dashboard...")
         router.push("/admin/dashboard")
-        router.refresh()
       } else {
-        setError(result.message || "Invalid credentials")
+        setError(data.error || "Invalid credentials")
       }
-    } catch (err) {
-      console.error("Login error:", err)
-      setError("An error occurred. Please try again.")
+    } catch (error) {
+      console.error("Login error:", error)
+      setError("An error occurred during login")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="container flex items-center justify-center min-h-[calc(100vh-8rem)] py-12">
-      <Card className="mx-auto max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-2">
+          <div className="flex items-center justify-center mb-4">
             <div className="p-2 bg-primary/10 rounded-full">
-              <Shield className="h-10 w-10 text-primary" />
+              <Shield className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access the admin dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="flex items-center gap-2 rounded-lg bg-destructive/15 p-3 text-sm text-destructive mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <p>{error}</p>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
@@ -81,6 +76,7 @@ export default function AdminLoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -91,12 +87,23 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Login"}
+              {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            <p>Default credentials:</p>
+            <p>Username: admin | Password: admin123</p>
+          </div>
         </CardContent>
       </Card>
     </div>

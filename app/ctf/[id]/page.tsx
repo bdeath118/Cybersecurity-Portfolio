@@ -1,35 +1,39 @@
 import Link from "next/link"
+import { notFound } from "next/navigation"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Flag, Trophy, Users, CheckCircle, XCircle } from "lucide-react"
-import { getCTFEventById, getCTFEvents } from "@/lib/data"
-import { notFound } from "next/navigation"
+import { ArrowLeft, Flag, Trophy, Users, Calendar, Clock } from "lucide-react"
+import { getCTFEvent } from "@/lib/data"
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
-  const event = await getCTFEventById(params.id)
+  try {
+    const event = await getCTFEvent(params.id)
+    if (!event) {
+      return {
+        title: "CTF Event Not Found | Cyber Security Portfolio",
+        description: "The requested CTF event could not be found.",
+      }
+    }
 
-  if (!event) {
     return {
-      title: "CTF Event Not Found",
+      title: `${event.name} | CTF Events`,
+      description: event.description || `CTF event: ${event.name}`,
+      openGraph: {
+        title: event.name,
+        description: event.description || `CTF event: ${event.name}`,
+      },
+    }
+  } catch (error) {
+    return {
+      title: "CTF Event | Cyber Security Portfolio",
+      description: "CTF event details",
     }
   }
-
-  return {
-    title: `${event.name} | Cyber Security Portfolio`,
-    description: `Details about my participation in the ${event.name} CTF competition`,
-  }
-}
-
-export async function generateStaticParams() {
-  const events = await getCTFEvents()
-
-  return events.map((event) => ({
-    id: event.id,
-  }))
 }
 
 export default async function CTFEventPage({ params }: { params: { id: string } }) {
-  const event = await getCTFEventById(params.id)
+  const event = await getCTFEvent(params.id)
 
   if (!event) {
     notFound()
@@ -37,115 +41,127 @@ export default async function CTFEventPage({ params }: { params: { id: string } 
 
   return (
     <div className="container py-12 md:py-24 px-4 md:px-6">
-      <Link
-        href="/ctf"
-        className="inline-flex items-center mb-8 text-sm font-medium text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to CTF Events
-      </Link>
+      <div className="mb-8">
+        <Link href="/ctf">
+          <Button variant="ghost" className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to CTF Events
+          </Button>
+        </Link>
+      </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-6">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl">{event.name}</h1>
+            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">{event.name}</h1>
+            <div className="flex items-center gap-4 mt-4 text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span>{event.date}</span>
+              </div>
               <Badge
                 variant={
                   event.difficulty === "Easy" ? "outline" : event.difficulty === "Medium" ? "secondary" : "destructive"
                 }
-                className="text-base py-1 px-3"
               >
                 {event.difficulty}
               </Badge>
             </div>
-            <p className="text-muted-foreground">{event.date}</p>
           </div>
 
-          <div className="prose prose-gray dark:prose-invert max-w-none">
-            <p>{event.description}</p>
-          </div>
+          {event.description && (
+            <div className="prose prose-gray dark:prose-invert max-w-none">
+              <p>{event.description}</p>
+            </div>
+          )}
 
           {event.challenges && event.challenges.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Challenges</h2>
-              <div className="grid gap-4">
-                {event.challenges.map((challenge) => (
-                  <Card key={challenge.id}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-lg font-medium">{challenge.name}</CardTitle>
-                      <Badge>{challenge.category}</Badge>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          {challenge.solved ? (
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <XCircle className="h-5 w-5 text-red-500" />
-                          )}
-                          <span>{challenge.solved ? "Solved" : "Unsolved"}</span>
-                        </div>
-                        <Badge variant="outline">{challenge.points} points</Badge>
+            <Card>
+              <CardHeader>
+                <CardTitle>Challenges Completed</CardTitle>
+                <CardDescription>Individual challenges solved during this CTF</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {event.challenges.map((challenge, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h4 className="font-medium">{challenge.name}</h4>
+                        <p className="text-sm text-muted-foreground">{challenge.category}</p>
                       </div>
-                      {challenge.description && (
-                        <p className="mt-2 text-sm text-muted-foreground">{challenge.description}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                      <div className="text-right">
+                        <div className="font-medium">{challenge.points} pts</div>
+                        <Badge variant="outline" className="text-xs">
+                          {challenge.difficulty}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
-        <div>
+        <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Event Stats</CardTitle>
-              <CardDescription>Performance metrics</CardDescription>
+              <CardTitle>Event Statistics</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Ranking</span>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <div className="font-medium">Team</div>
+                  <div className="text-sm text-muted-foreground">{event.team}</div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>Position</span>
-                  <span className="font-bold">
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Trophy className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <div className="font-medium">Final Rank</div>
+                  <div className="text-sm text-muted-foreground">
                     {event.rank} of {event.totalTeams}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Percentile</span>
-                  <span className="font-bold">{Math.round((1 - event.rank / event.totalTeams) * 100)}%</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Flag className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Flags Captured</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Total</span>
-                  <span className="font-bold">{event.flagsCaptured}</span>
+              <div className="flex items-center gap-3">
+                <Flag className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <div className="font-medium">Flags Captured</div>
+                  <div className="text-sm text-muted-foreground">{event.flagsCaptured}</div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Team</span>
+              {event.duration && (
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">Duration</div>
+                    <div className="text-sm text-muted-foreground">{event.duration}</div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>Name</span>
-                  <span className="font-bold">{event.team}</span>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
+
+          {event.writeupUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Resources</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Link href={event.writeupUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="w-full gap-2">
+                    <Flag className="h-4 w-4" />
+                    View Writeup
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

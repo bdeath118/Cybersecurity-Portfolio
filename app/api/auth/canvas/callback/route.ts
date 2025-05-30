@@ -1,31 +1,59 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { CanvasAuthProvider, storeToken } from "@/lib/auth-providers"
-import { updateImportSettings } from "@/lib/actions"
+import { getEnv } from "@/lib/env"
 
 export async function GET(request: NextRequest) {
-  // Get the authorization code from the URL
-  const searchParams = request.nextUrl.searchParams
-  const code = searchParams.get("code")
-
-  if (!code) {
-    return NextResponse.redirect(new URL("/admin/dashboard?error=missing_code", request.url))
-  }
-
   try {
-    // Exchange the code for an access token
-    const canvasAuth = new CanvasAuthProvider()
-    const tokenData = await canvasAuth.getToken(code)
+    console.log("Canvas callback route called")
 
-    // Store the token securely
+    // Get environment variables
+    const env = getEnv()
+    const baseUrl = env.SITE_URL || `https://${env.VERCEL_URL}` || "http://localhost:3000"
+
+    // Get code from query params
+    const url = new URL(request.url)
+    const code = url.searchParams.get("code")
+    const error = url.searchParams.get("error")
+
+    // Handle OAuth errors
+    if (error) {
+      console.error("Canvas OAuth error:", error)
+      return NextResponse.redirect(
+        new URL(`/admin/dashboard?error=canvas_oauth_error&message=${encodeURIComponent(error)}`, baseUrl),
+      )
+    }
+
+    // Validate code
+    if (!code) {
+      console.error("No code provided in Canvas callback")
+      return NextResponse.redirect(new URL("/admin/dashboard?error=canvas_no_code", baseUrl))
+    }
+
+    // Exchange code for token
+    console.log("Exchanging code for Canvas token")
+    const provider = new CanvasAuthProvider()
+    const tokenData = await provider.getToken(code)
+
+    // Store token
+    console.log("Storing Canvas token")
     storeToken("canvas", tokenData)
 
-    // Update import settings to indicate Canvas is connected
-    await updateImportSettings(new FormData())
-
-    // Redirect back to the admin dashboard
-    return NextResponse.redirect(new URL("/admin/dashboard?success=canvas_connected", request.url))
+    // Redirect to dashboard
+    return NextResponse.redirect(new URL("/admin/dashboard?success=canvas_connected", baseUrl))
   } catch (error) {
+    // Log error
     console.error("Error in Canvas callback:", error)
-    return NextResponse.redirect(new URL("/admin/dashboard?error=auth_failed", request.url))
+
+    // Get base URL for redirection
+    const env = getEnv()
+    const baseUrl = env.SITE_URL || `https://${env.VERCEL_URL}` || "http://localhost:3000"
+
+    // Redirect with error
+    return NextResponse.redirect(
+      new URL(
+        `/admin/dashboard?error=canvas_callback_failed&message=${encodeURIComponent(error instanceof Error ? error.message : "Unknown error")}`,
+        baseUrl,
+      ),
+    )
   }
 }

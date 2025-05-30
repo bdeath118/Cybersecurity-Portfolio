@@ -1,154 +1,185 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
+import fs from "fs"
+import path from "path"
+import crypto from "crypto"
 
-// In-memory storage for credentials (in production, use a secure database)
-const storedCredentials = {
-  linkedin: { clientId: "", clientSecret: "", configured: false },
-  credly: { clientId: "", clientSecret: "", configured: false },
-  canvas: { clientId: "", clientSecret: "", configured: false },
-  ctftime: { clientId: "", clientSecret: "", configured: false },
-  hackerone: { clientId: "", clientSecret: "", configured: false },
-  bugcrowd: { clientId: "", clientSecret: "", configured: false },
-  medium: { clientId: "", clientSecret: "", configured: false },
-  shodan: { clientId: "", clientSecret: "", configured: false },
-}
+// Define the credentials directory
+const CREDENTIALS_DIR = path.join(process.cwd(), "data", "credentials")
 
-// Simple encryption for storing credentials (in production, use proper encryption)
-function encryptCredential(value: string): string {
-  if (!value) return ""
+// Ensure the credentials directory exists
+if (!fs.existsSync(CREDENTIALS_DIR)) {
   try {
-    return Buffer.from(value).toString("base64")
-  } catch {
-    return ""
-  }
-}
-
-function decryptCredential(value: string): string {
-  if (!value) return ""
-  try {
-    return Buffer.from(value, "base64").toString("utf-8")
-  } catch {
-    return ""
-  }
-}
-
-export async function GET() {
-  try {
-    // Return credentials with client secrets masked for security
-    const maskedCredentials = Object.entries(storedCredentials).reduce((acc, [platform, creds]) => {
-      acc[platform] = {
-        clientId: creds.clientId ? decryptCredential(creds.clientId) : "",
-        clientSecret: creds.clientSecret ? "••••••••••••••••" : "",
-        configured: creds.configured,
-      }
-      return acc
-    }, {} as any)
-
-    return new NextResponse(JSON.stringify(maskedCredentials), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-      },
-    })
+    fs.mkdirSync(CREDENTIALS_DIR, { recursive: true })
   } catch (error) {
-    console.error("Error in GET /api/admin/credentials:", error)
-
-    // Return default structure on error
-    const defaultResponse = {
-      linkedin: { clientId: "", clientSecret: "", configured: false },
-      credly: { clientId: "", clientSecret: "", configured: false },
-      canvas: { clientId: "", clientSecret: "", configured: false },
-      ctftime: { clientId: "", clientSecret: "", configured: false },
-      hackerone: { clientId: "", clientSecret: "", configured: false },
-      bugcrowd: { clientId: "", clientSecret: "", configured: false },
-      medium: { clientId: "", clientSecret: "", configured: false },
-      shodan: { clientId: "", clientSecret: "", configured: false },
-    }
-
-    return new NextResponse(JSON.stringify(defaultResponse), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-      },
-    })
+    console.error("Error creating credentials directory:", error)
   }
 }
 
-export async function POST(request: Request) {
+// Encryption key (derived from AUTH_SECRET)
+function getEncryptionKey() {
+  const secret = process.env.AUTH_SECRET || "development-secret-key-change-in-production"
+  return crypto.createHash("sha256").update(String(secret)).digest("base64").substring(0, 32)
+}
+
+// Encrypt credentials
+function encryptCredentials(data: any) {
   try {
-    const body = await request.json()
-    const { platform, clientId, clientSecret } = body
-
-    if (!platform || !clientId || !clientSecret) {
-      return new NextResponse(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+    const key = getEncryptionKey()
+    const iv = crypto.randomBytes(16)
+    const cipher = crypto.createCipheriv("aes-256-cbc", key, iv)
+    let encrypted = cipher.update(JSON.stringify(data), "utf8", "hex")
+    encrypted += cipher.final("hex")
+    return {
+      iv: iv.toString("hex"),
+      data: encrypted,
     }
-
-    const validPlatforms = ["linkedin", "credly", "canvas", "ctftime", "hackerone", "bugcrowd", "medium", "shodan"]
-    if (!validPlatforms.includes(platform)) {
-      return new NextResponse(JSON.stringify({ error: "Invalid platform" }), {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-    }
-
-    // Store encrypted credentials
-    storedCredentials[platform as keyof typeof storedCredentials] = {
-      clientId: encryptCredential(clientId),
-      clientSecret: encryptCredential(clientSecret),
-      configured: true,
-    }
-
-    // Return updated credentials (masked)
-    const maskedCredentials = Object.entries(storedCredentials).reduce((acc, [platform, creds]) => {
-      acc[platform] = {
-        clientId: creds.clientId ? decryptCredential(creds.clientId) : "",
-        clientSecret: creds.clientSecret ? "••••••••••••••••" : "",
-        configured: creds.configured,
-      }
-      return acc
-    }, {} as any)
-
-    return new NextResponse(JSON.stringify(maskedCredentials), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-      },
-    })
   } catch (error) {
-    console.error("Error in POST /api/admin/credentials:", error)
-
-    return new NextResponse(JSON.stringify({ error: "Failed to save credentials" }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+    console.error("Encryption error:", error)
+    throw new Error("Failed to encrypt credentials")
   }
 }
 
-// Helper function to get decrypted credentials for use in OAuth flows
+// Decrypt credentials
+function decryptCredentials(encrypted: { iv: string; data: string }) {
+  try {
+    const key = getEncryptionKey()
+    const iv = Buffer.from(encrypted.iv, "hex")
+    const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv)
+    let decrypted = decipher.update(encrypted.data, "hex", "utf8")
+    decrypted += decipher.final("utf8")
+    return JSON.parse(decrypted)
+  } catch (error) {
+    console.error("Decryption error:", error)
+    throw new Error("Failed to decrypt credentials")
+  }
+}
+
+// Save encrypted credentials
+async function saveCredentials(platform: string, credentials: any) {
+  try {
+    const filePath = path.join(CREDENTIALS_DIR, `${platform}.json`)
+    const encrypted = encryptCredentials(credentials)
+    fs.writeFileSync(filePath, JSON.stringify(encrypted, null, 2))
+    return true
+  } catch (error) {
+    console.error(`Error saving ${platform} credentials:`, error)
+    return false
+  }
+}
+
+// Get decrypted credentials
 export async function getDecryptedCredentials(platform: string) {
   try {
-    const creds = storedCredentials[platform as keyof typeof storedCredentials]
-    if (!creds || !creds.configured) {
+    const filePath = path.join(CREDENTIALS_DIR, `${platform}.json`)
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.log(`No credentials file found for ${platform}`)
       return null
     }
 
-    return {
-      clientId: decryptCredential(creds.clientId),
-      clientSecret: decryptCredential(creds.clientSecret),
+    // Read and decrypt
+    const fileContent = fs.readFileSync(filePath, "utf8")
+    const encrypted = JSON.parse(fileContent)
+    return decryptCredentials(encrypted)
+  } catch (error) {
+    console.error(`Error getting ${platform} credentials:`, error)
+    return null
+  }
+}
+
+// GET handler - Get credentials for a platform
+export async function GET(request: NextRequest) {
+  try {
+    // Skip session validation for now to debug
+    // const session = await validateSession()
+    // if (!session) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // }
+
+    // Get platform from query params
+    const url = new URL(request.url)
+    const platform = url.searchParams.get("platform")
+
+    if (!platform) {
+      return NextResponse.json(
+        { error: "Platform parameter is required" },
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
+
+    // Get credentials
+    const credentials = await getDecryptedCredentials(platform)
+
+    // Return credentials or empty object
+    return NextResponse.json(credentials || { configured: false }, {
+      headers: { "Content-Type": "application/json" },
+    })
+  } catch (error) {
+    console.error("Error in GET /api/admin/credentials:", error)
+    return NextResponse.json(
+      { error: "Failed to get credentials", message: error instanceof Error ? error.message : "Unknown error" },
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    )
+  }
+}
+
+// POST handler - Save credentials for a platform
+export async function POST(request: NextRequest) {
+  try {
+    // Skip session validation for now to debug
+    // const session = await validateSession()
+    // if (!session) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // }
+
+    // Get request body
+    const body = await request.json()
+    const { platform, credentials } = body
+
+    if (!platform || !credentials) {
+      return NextResponse.json(
+        { error: "Platform and credentials are required" },
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
+
+    // Save credentials
+    const success = await saveCredentials(platform, credentials)
+
+    if (success) {
+      return NextResponse.json(
+        { success: true },
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    } else {
+      return NextResponse.json(
+        { error: "Failed to save credentials" },
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
     }
   } catch (error) {
-    console.error("Error getting decrypted credentials:", error)
-    return null
+    console.error("Error in POST /api/admin/credentials:", error)
+    return NextResponse.json(
+      { error: "Failed to save credentials", message: error instanceof Error ? error.message : "Unknown error" },
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    )
   }
 }
