@@ -4,6 +4,8 @@ import { Inter } from "next/font/google"
 import { CustomThemeProvider } from "@/components/custom-theme-provider"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { Toaster } from "@/components/ui/toaster"
+import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { getSiteInfo } from "@/lib/data"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -63,11 +65,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <CustomThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <div className="relative flex min-h-screen flex-col">
-            <SiteHeader />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-          </div>
+          <ErrorBoundary>
+            <div className="relative flex min-h-screen flex-col">
+              <SiteHeader />
+              <main className="flex-1">{children}</main>
+              <SiteFooter />
+            </div>
+            <Toaster />
+          </ErrorBoundary>
         </CustomThemeProvider>
       </body>
     </html>

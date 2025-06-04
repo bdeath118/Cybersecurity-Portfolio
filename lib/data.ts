@@ -51,6 +51,7 @@ const defaultSiteInfo: SiteInfo = {
   github: "https://github.com/johndoe",
   linkedin: "https://linkedin.com/in/johndoe",
   twitter: "https://twitter.com/johndoe",
+  resume: undefined,
   icon: "/images/avatar-photo.jpg",
   backgroundImage: "/images/background.jpeg",
   backgroundOpacity: 80,

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 import axios from "axios"
 import { getEnv } from "./env"
+import { getRedirectUri, validateIntegration } from "./integration-config"
 
 // Token storage interface
 interface TokenData {
@@ -53,6 +54,11 @@ async function getStoredCredentials(platform: string) {
     const { getDecryptedCredentials } = await import("@/app/api/admin/credentials/route")
     const credentials = await getDecryptedCredentials(platform)
 
+    if (!credentials) {
+      console.log(`No credentials found for ${platform}`)
+      return null
+    }
+
     console.log(`Credentials for ${platform}:`, credentials ? "Found" : "Not found")
     return credentials
   } catch (error) {
@@ -73,7 +79,11 @@ export class LinkedInAuthProvider {
   private static readonly TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
   private static readonly API_BASE = "https://api.linkedin.com/v2"
 
-  private redirectUri = `${getBaseUrl()}/api/auth/linkedin/callback`
+  private redirectUri: string
+
+  constructor() {
+    this.redirectUri = getRedirectUri("linkedin")
+  }
 
   // Get login URL
   async getLoginUrl(): Promise<string | null> {
@@ -85,12 +95,18 @@ export class LinkedInAuthProvider {
 
       if (!credentials) {
         console.error("LinkedIn credentials not found")
-        throw new Error("LinkedIn credentials not configured")
+        return null
       }
 
       if (!credentials.clientId) {
         console.error("LinkedIn client ID not found")
-        throw new Error("LinkedIn client ID not configured")
+        return null
+      }
+
+      const isValid = await validateIntegration("linkedin")
+      if (!isValid) {
+        console.error("LinkedIn integration is not properly configured.")
+        return null
       }
 
       console.log("LinkedIn credentials found, generating OAuth URL")
@@ -116,8 +132,14 @@ export class LinkedInAuthProvider {
   // Exchange code for token
   async getToken(code: string): Promise<TokenData> {
     const credentials = await getStoredCredentials("linkedin")
-    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
+    if (!credentials) {
+      console.error("LinkedIn credentials not found")
       throw new Error("LinkedIn credentials not configured")
+    }
+
+    if (!credentials.clientId || !credentials.clientSecret) {
+      console.error("LinkedIn client ID or secret not found")
+      throw new Error("LinkedIn client ID or secret not configured")
     }
 
     try {
@@ -171,31 +193,57 @@ export class CredlyAuthProvider {
   private static readonly TOKEN_URL = "https://www.credly.com/oauth/token"
   private static readonly API_BASE = "https://api.credly.com/v1"
 
-  private redirectUri = `${getBaseUrl()}/api/auth/credly/callback`
+  private redirectUri: string
+
+  constructor() {
+    this.redirectUri = getRedirectUri("credly")
+  }
 
   // Get login URL
   async getLoginUrl(): Promise<string | null> {
-    const credentials = await getStoredCredentials("credly")
-    if (!credentials || !credentials.clientId) {
-      console.error("Credly credentials not configured")
+    try {
+      const credentials = await getStoredCredentials("credly")
+      if (!credentials) {
+        console.error("Credly credentials not configured")
+        return null
+      }
+
+      if (!credentials.clientId) {
+        console.error("Credly client ID not found")
+        return null
+      }
+
+      const isValid = await validateIntegration("credly")
+      if (!isValid) {
+        console.error("Credly integration is not properly configured.")
+        return null
+      }
+
+      const params = new URLSearchParams({
+        client_id: credentials.clientId,
+        redirect_uri: this.redirectUri,
+        response_type: "code",
+        scope: "read:badges",
+      })
+
+      return `${CredlyAuthProvider.AUTH_URL}?${params.toString()}`
+    } catch (error) {
+      console.error("Error generating Credly login URL:", error)
       return null
     }
-
-    const params = new URLSearchParams({
-      client_id: credentials.clientId,
-      redirect_uri: this.redirectUri,
-      response_type: "code",
-      scope: "read:badges",
-    })
-
-    return `${CredlyAuthProvider.AUTH_URL}?${params.toString()}`
   }
 
   // Exchange code for token
   async getToken(code: string): Promise<TokenData> {
     const credentials = await getStoredCredentials("credly")
-    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
+    if (!credentials) {
+      console.error("Credly credentials not found")
       throw new Error("Credly credentials not configured")
+    }
+
+    if (!credentials.clientId || !credentials.clientSecret) {
+      console.error("Credly client ID or secret not found")
+      throw new Error("Credly client ID or secret not configured")
     }
 
     try {
@@ -238,11 +286,19 @@ export class CredlyAuthProvider {
 
 // Canvas authentication provider
 export class CanvasAuthProvider {
+  private static API_BASE: string
   private static readonly AUTH_URL = "https://canvas.instructure.com/login/oauth2/auth"
   private static readonly TOKEN_URL = "https://canvas.instructure.com/login/oauth2/token"
-  private static readonly API_BASE = "https://canvas.instructure.com/api/v1"
 
-  private redirectUri = `${getBaseUrl()}/api/auth/canvas/callback`
+  private redirectUri: string
+
+  constructor() {
+    const env = getEnv()
+    const canvasDomain = env.CANVAS_DOMAIN || "canvas.instructure.com"
+
+    this.redirectUri = getRedirectUri("canvas")
+    CanvasAuthProvider.API_BASE = `https://${canvasDomain}/api/v1`
+  }
 
   // Get login URL
   async getLoginUrl(): Promise<string | null> {
@@ -252,8 +308,19 @@ export class CanvasAuthProvider {
       const credentials = await getStoredCredentials("canvas")
       console.log("Canvas credentials retrieved:", credentials ? "Found" : "Not found")
 
-      if (!credentials || !credentials.clientId) {
-        console.error("Canvas credentials not configured or missing client ID")
+      if (!credentials) {
+        console.error("Canvas credentials not configured")
+        return null
+      }
+
+      if (!credentials.clientId) {
+        console.error("Canvas client ID not found")
+        return null
+      }
+
+      const isValid = await validateIntegration("canvas")
+      if (!isValid) {
+        console.error("Canvas integration is not properly configured.")
         return null
       }
 
@@ -277,8 +344,14 @@ export class CanvasAuthProvider {
   // Exchange code for token
   async getToken(code: string): Promise<TokenData> {
     const credentials = await getStoredCredentials("canvas")
-    if (!credentials || !credentials.clientId || !credentials.clientSecret) {
+    if (!credentials) {
+      console.error("Canvas credentials not found")
       throw new Error("Canvas credentials not configured")
+    }
+
+    if (!credentials.clientId || !credentials.clientSecret) {
+      console.error("Canvas client ID or secret not found")
+      throw new Error("Canvas client ID or secret not configured")
     }
 
     try {

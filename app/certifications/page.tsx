@@ -1,86 +1,49 @@
-import Image from "next/image"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Award, ExternalLink } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { getCertifications } from "@/lib/data"
-import Link from "next/link"
+import { CertificationsSection } from "@/components/certifications-section"
+import { getCertifications, getSiteInfo } from "@/lib/data"
 
 export async function generateMetadata() {
-  return {
-    title: "Certifications | Cyber Security Portfolio",
-    description: "View my cybersecurity certifications and qualifications",
+  try {
+    const siteInfo = await getSiteInfo()
+    return {
+      title: `Certifications | ${siteInfo.name || "Cyber Security Portfolio"}`,
+      description: "My cybersecurity certifications, credentials, and professional achievements.",
+      openGraph: {
+        title: "Cybersecurity Certifications",
+        description: "My cybersecurity certifications, credentials, and professional achievements.",
+      },
+    }
+  } catch {
+    return {
+      title: "Certifications | Cyber Security Portfolio",
+      description: "Cybersecurity certifications and professional credentials.",
+    }
   }
 }
 
 export default async function CertificationsPage() {
-  const certifications = await getCertifications()
+  try {
+    const certifications = await getCertifications()
 
-  return (
-    <div className="container py-12 md:py-24 px-4 md:px-6">
-      <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">Certifications</h1>
-          <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-            Industry-recognized credentials and qualifications
+    return (
+      <div className="container py-12 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Certifications</h1>
+          <p className="text-lg text-muted-foreground mb-8">
+            My professional cybersecurity certifications and credentials.
           </p>
+          <CertificationsSection certifications={certifications} />
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {certifications.map((cert) => (
-          <Card key={cert.id} className="flex flex-col h-full">
-            <CardHeader className="flex flex-row items-center gap-4">
-              {cert.logo ? (
-                <Image
-                  src={cert.logo || "/placeholder.svg"}
-                  alt={cert.name}
-                  width={64}
-                  height={64}
-                  className="rounded-md"
-                />
-              ) : (
-                <div className="p-2 bg-primary/10 rounded-full">
-                  <Award className="h-10 w-10 text-primary" />
-                </div>
-              )}
-              <div>
-                <CardTitle className="text-xl">{cert.name}</CardTitle>
-                <CardDescription>{cert.issuer}</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-4">
-              <div className="flex justify-between">
-                <Badge variant="outline">Issued: {cert.date}</Badge>
-                {cert.expiryDate && (
-                  <Badge
-                    variant="outline"
-                    className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                  >
-                    Expires: {cert.expiryDate}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-muted-foreground">{cert.description}</p>
-              {cert.credentialUrl && (
-                <Link href={cert.credentialUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <ExternalLink className="h-4 w-4" />
-                    Verify Credential
-                  </Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {certifications.length === 0 && (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium mb-2">No certifications yet</h3>
-          <p className="text-muted-foreground">Certifications will appear here once they are added.</p>
+    )
+  } catch (error) {
+    console.error("Error loading certifications:", error)
+    return (
+      <div className="container py-12 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-3xl font-bold mb-4">Certifications</h1>
+          <p className="text-muted-foreground">Unable to load certifications at this time.</p>
         </div>
-      )}
-    </div>
-  )
+      </div>
+    )
+  }
 }

@@ -124,6 +124,7 @@ export interface SiteInfo {
   github?: string
   linkedin?: string
   linkedinProfileUrl?: string
+  resume?: string
   theme?: {
     primaryColor: string
     secondaryColor: string

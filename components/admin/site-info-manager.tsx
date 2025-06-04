@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import type { SiteInfo } from "@/lib/types"
-import { updateSiteInformation, uploadIcon, uploadBackgroundImage } from "@/lib/actions"
+import { updateSiteInformation, uploadIcon, uploadBackgroundImage, uploadResume } from "@/lib/actions"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
+import { FileText } from "lucide-react"
 
 export function SiteInfoManager() {
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null)
@@ -27,6 +28,10 @@ export function SiteInfoManager() {
   const [selectedBgFile, setSelectedBgFile] = useState<File | null>(null)
   const [bgOpacity, setBgOpacity] = useState<number>(100)
   const { toast } = useToast()
+
+  const [isUploadingResume, setIsUploadingResume] = useState(false)
+  const [resumePreview, setResumePreview] = useState<string | null>(null)
+  const [selectedResumeFile, setSelectedResumeFile] = useState<File | null>(null)
 
   useEffect(() => {
     async function fetchSiteInfo() {
@@ -221,6 +226,55 @@ export function SiteInfoManager() {
     }
   }
 
+  async function handleResumeUpload(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!selectedResumeFile) {
+      toast({
+        title: "Error",
+        description: "Please select a resume file to upload",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUploadingResume(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("resume", selectedResumeFile)
+
+      const result = await uploadResume(formData)
+
+      if (result.success) {
+        setSiteInfo((prev) => (prev ? { ...prev, resume: result.resumeUrl } : null))
+        setResumePreview(null)
+        setSelectedResumeFile(null)
+        toast({
+          title: "Success",
+          description: "Resume uploaded successfully",
+        })
+      }
+    } catch (error) {
+      console.error("Error uploading resume:", error)
+      toast({
+        title: "Error",
+        description: "Failed to upload resume",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploadingResume(false)
+    }
+  }
+
+  function handleResumeFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedResumeFile(file)
+      setResumePreview(file.name)
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8">Loading site information...</div>
   }
@@ -278,6 +332,46 @@ export function SiteInfoManager() {
                 <div className="space-y-2">
                   <Label htmlFor="linkedin">LinkedIn URL</Label>
                   <Input id="linkedin" name="linkedin" defaultValue={siteInfo.linkedin} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="resume">Resume/CV</Label>
+                  <div className="space-y-4">
+                    {siteInfo.resume && (
+                      <div className="flex items-center gap-2 p-3 border rounded-md">
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm">Current resume uploaded</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(siteInfo.resume, "_blank")}
+                        >
+                          View
+                        </Button>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleResumeUpload} className="space-y-4">
+                      <div className="space-y-2">
+                        <Input
+                          id="resume"
+                          name="resume"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleResumeFileChange}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Upload your resume in PDF, DOC, or DOCX format (max 5MB)
+                        </p>
+                        {resumePreview && <p className="text-sm text-muted-foreground">Selected: {resumePreview}</p>}
+                      </div>
+
+                      <Button type="submit" disabled={isUploadingResume || !selectedResumeFile}>
+                        {isUploadingResume ? "Uploading..." : "Upload Resume"}
+                      </Button>
+                    </form>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={isSaving}>

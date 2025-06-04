@@ -18,10 +18,30 @@ export interface Env {
   // LinkedIn Integration
   LINKEDIN_PROFILE_URL?: string
   CREDLY_USERNAME?: string
+  LINKEDIN_CLIENT_ID?: string
+  LINKEDIN_CLIENT_SECRET?: string
+  CREDLY_CLIENT_ID?: string
+  CREDLY_CLIENT_SECRET?: string
 
   // Canvas Integration - Optional, will be added via admin dashboard
   CANVAS_API_KEY?: string
   CANVAS_USER_ID?: string
+  CANVAS_CLIENT_ID?: string
+  CANVAS_CLIENT_SECRET?: string
+  CANVAS_DOMAIN?: string
+
+  // Github Integration
+  GITHUB_CLIENT_ID?: string
+  GITHUB_CLIENT_SECRET?: string
+  GITHUB_USERNAME?: string
+
+  // TryHackMe Integration
+  TRYHACKME_API_KEY?: string
+  TRYHACKME_USERNAME?: string
+
+  // HackTheBox Integration
+  HACKTHEBOX_API_KEY?: string
+  HACKTHEBOX_USERNAME?: string
 
   // Node environment
   NODE_ENV: "development" | "production" | "test"
@@ -68,6 +88,20 @@ export function getEnv(): Env {
     CANVAS_API_KEY: process.env.CANVAS_API_KEY,
     CANVAS_USER_ID: process.env.CANVAS_USER_ID,
     NODE_ENV: (process.env.NODE_ENV as Env["NODE_ENV"]) || "development",
+    LINKEDIN_CLIENT_ID: process.env.LINKEDIN_CLIENT_ID,
+    LINKEDIN_CLIENT_SECRET: process.env.LINKEDIN_CLIENT_SECRET,
+    CREDLY_CLIENT_ID: process.env.CREDLY_CLIENT_ID,
+    CREDLY_CLIENT_SECRET: process.env.CREDLY_CLIENT_SECRET,
+    CANVAS_CLIENT_ID: process.env.CANVAS_CLIENT_ID,
+    CANVAS_CLIENT_SECRET: process.env.CANVAS_CLIENT_SECRET,
+    CANVAS_DOMAIN: process.env.CANVAS_DOMAIN,
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    GITHUB_USERNAME: process.env.GITHUB_USERNAME,
+    TRYHACKME_API_KEY: process.env.TRYHACKME_API_KEY,
+    TRYHACKME_USERNAME: process.env.TRYHACKME_USERNAME,
+    HACKTHEBOX_API_KEY: process.env.HACKTHEBOX_API_KEY,
+    HACKTHEBOX_USERNAME: process.env.HACKTHEBOX_USERNAME,
   }
 }
 

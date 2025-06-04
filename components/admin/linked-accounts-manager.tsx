@@ -228,29 +228,12 @@ export function LinkedAccountsManager() {
   useEffect(() => {
     async function fetchAccounts() {
       try {
-        // Mock data for demonstration - replace with actual API call
-        const mockAccounts: LinkedAccount[] = [
-          {
-            id: "linkedin-1",
-            platform: "linkedin",
-            username: "cybersec-pro",
-            email: "user@example.com",
-            avatarUrl: "https://i.pravatar.cc/150?u=linkedin",
-            connectedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            lastSync: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            status: "active",
-          },
-          {
-            id: "tryhackme-1",
-            platform: "tryhackme",
-            username: "cybersec-learner",
-            connectedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-            lastSync: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            status: "active",
-          },
-        ]
-
-        setAccounts(mockAccounts)
+        const response = await fetch("/api/integrations")
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const data = await response.json()
+        setAccounts(data)
       } catch (error) {
         console.error("Error fetching linked accounts:", error)
         toast({
@@ -287,23 +270,28 @@ export function LinkedAccountsManager() {
   const handleRefresh = async (accountId: string) => {
     setRefreshing(accountId)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const response = await fetch(`/api/integrations/${accountId}/refresh`, {
+        method: "POST",
+      })
 
-      setAccounts((prev) =>
-        prev.map((account) =>
-          account.id === accountId ? { ...account, lastSync: new Date().toISOString(), status: "active" } : account,
-        ),
-      )
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to refresh account data")
+      }
+
+      const updatedAccount = await response.json()
+
+      setAccounts((prev) => prev.map((account) => (account.id === accountId ? updatedAccount : account)))
 
       toast({
         title: "Success",
         description: "Account data refreshed successfully",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error refreshing account:", error)
       toast({
         title: "Error",
-        description: "Failed to refresh account data",
+        description: error.message || "Failed to refresh account data",
         variant: "destructive",
       })
     } finally {
@@ -314,7 +302,14 @@ export function LinkedAccountsManager() {
   const handleDisconnect = async (accountId: string) => {
     setDisconnecting(accountId)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch(`/api/integrations/${accountId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to disconnect account")
+      }
 
       setAccounts((prev) => prev.filter((account) => account.id !== accountId))
 
@@ -322,11 +317,11 @@ export function LinkedAccountsManager() {
         title: "Success",
         description: "Account disconnected successfully",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error disconnecting account:", error)
       toast({
         title: "Error",
-        description: "Failed to disconnect account",
+        description: error.message || "Failed to disconnect account",
         variant: "destructive",
       })
     } finally {
@@ -368,6 +363,31 @@ export function LinkedAccountsManager() {
       month: "short",
       day: "numeric",
     })
+  }
+
+  const handleTestIntegration = async (platformId: string) => {
+    try {
+      const response = await fetch(`/api/integrations/${platformId}/test`, {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Integration test failed")
+      }
+
+      toast({
+        title: "Integration Test Passed",
+        description: `Successfully connected to ${platformId}`,
+      })
+    } catch (error: any) {
+      console.error(`Integration test failed for ${platformId}:`, error)
+      toast({
+        title: "Integration Test Failed",
+        description: error.message || `Failed to connect to ${platformId}`,
+        variant: "destructive",
+      })
+    }
   }
 
   if (loading) {
@@ -524,6 +544,14 @@ export function LinkedAccountsManager() {
                       <Button variant="default" size="sm" className="flex-1" onClick={() => handleConnect(platform.id)}>
                         <LogIn className="h-4 w-4 mr-2" />
                         Connect
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleTestIntegration(platform.id)}
+                      >
+                        Test
                       </Button>
                     </CardFooter>
                   </Card>

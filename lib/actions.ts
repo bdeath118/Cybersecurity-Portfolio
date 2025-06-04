@@ -369,6 +369,33 @@ export async function uploadBackgroundImage(formData: FormData) {
   }
 }
 
+// Upload resume action
+export async function uploadResume(formData: FormData) {
+  try {
+    const resume = formData.get("resume") as File
+
+    if (!resume) {
+      throw new Error("No resume file provided")
+    }
+
+    // In a real implementation, you would upload the file to a storage service
+    // For now, we'll just use a placeholder URL
+    const resumeUrl = "/documents/resume.pdf" // Use a placeholder path
+
+    // Update site info with the new resume URL
+    const siteInfo = await updateSiteInfo({
+      resume: resumeUrl,
+    })
+
+    revalidatePath("/")
+    revalidatePath("/admin/dashboard")
+    return { success: true, resumeUrl }
+  } catch (error) {
+    console.error("Error uploading resume:", error)
+    return { success: false, error: "Failed to upload resume" }
+  }
+}
+
 // Digital Badge actions
 export async function createDigitalBadge(formData: FormData) {
   const name = formData.get("name") as string

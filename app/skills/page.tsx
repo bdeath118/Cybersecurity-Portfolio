@@ -1,69 +1,49 @@
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getSkills } from "@/lib/data"
+import { SkillsSection } from "@/components/skills-section"
+import { getSkills, getSiteInfo } from "@/lib/data"
 
 export async function generateMetadata() {
-  return {
-    title: "Skills | Cyber Security Portfolio",
-    description: "Explore my cybersecurity and technical skills",
+  try {
+    const siteInfo = await getSiteInfo()
+    return {
+      title: `Skills | ${siteInfo.name || "Cyber Security Portfolio"}`,
+      description: "My cybersecurity skills, expertise areas, and technical proficiencies.",
+      openGraph: {
+        title: "Cybersecurity Skills",
+        description: "My cybersecurity skills, expertise areas, and technical proficiencies.",
+      },
+    }
+  } catch {
+    return {
+      title: "Skills | Cyber Security Portfolio",
+      description: "Cybersecurity skills and technical expertise.",
+    }
   }
 }
 
 export default async function SkillsPage() {
-  const skills = await getSkills()
+  try {
+    const skills = await getSkills()
 
-  const categories = [...new Set(skills.map((skill) => skill.category))]
-  const skillsByCategory = categories.reduce(
-    (acc, category) => {
-      acc[category] = skills.filter((skill) => skill.category === category)
-      return acc
-    },
-    {} as Record<string, typeof skills>,
-  )
-
-  return (
-    <div className="container py-12 md:py-24 px-4 md:px-6">
-      <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">Technical Skills</h1>
-          <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-            Specialized cybersecurity and technical competencies
+    return (
+      <div className="container py-12 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Skills & Expertise</h1>
+          <p className="text-lg text-muted-foreground mb-8">
+            My technical skills and areas of expertise in cybersecurity.
           </p>
+          <SkillsSection skills={skills} />
         </div>
       </div>
-
-      {categories.length > 0 ? (
-        <Tabs defaultValue={categories[0]} className="max-w-4xl mx-auto">
-          <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-8">
-            {categories.map((category) => (
-              <TabsTrigger key={category} value={category}>
-                {category}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {categories.map((category) => (
-            <TabsContent key={category} value={category} className="space-y-8">
-              <div className="grid gap-6">
-                {skillsByCategory[category].map((skill) => (
-                  <div key={skill.id} className="space-y-2">
-                    <div className="flex justify-between">
-                      <h3 className="font-medium">{skill.name}</h3>
-                      <span>{skill.level}%</span>
-                    </div>
-                    <Progress value={skill.level} className="h-2" />
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
-      ) : (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium mb-2">No skills added yet</h3>
-          <p className="text-muted-foreground">Skills will appear here once they are added through the admin panel.</p>
+    )
+  } catch (error) {
+    console.error("Error loading skills:", error)
+    return (
+      <div className="container py-12 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-3xl font-bold mb-4">Skills & Expertise</h1>
+          <p className="text-muted-foreground">Unable to load skills at this time.</p>
         </div>
-      )}
-    </div>
-  )
+      </div>
+    )
+  }
 }

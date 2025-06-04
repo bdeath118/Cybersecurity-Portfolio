@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Eye, EyeOff, Save, ExternalLink, CheckCircle, AlertCircle, Shield, Bug, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -25,6 +25,7 @@ interface AllCredentials {
   bugcrowd: PlatformCredentials
   medium: PlatformCredentials
   shodan: PlatformCredentials
+  github: PlatformCredentials
 }
 
 const defaultCredentials: AllCredentials = {
@@ -36,6 +37,7 @@ const defaultCredentials: AllCredentials = {
   bugcrowd: { clientId: "", clientSecret: "", configured: false },
   medium: { clientId: "", clientSecret: "", configured: false },
   shodan: { clientId: "", clientSecret: "", configured: false },
+  github: { clientId: "", clientSecret: "", configured: false },
 }
 
 export function CredentialsManager() {
@@ -45,6 +47,9 @@ export function CredentialsManager() {
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const [integrationStatuses, setIntegrationStatuses] = useState<
+    Record<string, { status: "idle" | "loading" | "success" | "error"; message: string; details?: any }>
+  >({})
 
   useEffect(() => {
     async function fetchCredentials() {
@@ -171,6 +176,39 @@ export function CredentialsManager() {
     setShowSecrets((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  const handleTestIntegration = async (platformId: string) => {
+    setIntegrationStatuses((prev) => ({
+      ...prev,
+      [platformId]: { status: "loading", message: "Testing connection..." },
+    }))
+
+    try {
+      const response = await fetch(`/api/admin/test-integration?platform=${platformId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setIntegrationStatuses((prev) => ({ ...prev, [platformId]: { status: "success", message: data.message } }))
+      } else {
+        setIntegrationStatuses((prev) => ({
+          ...prev,
+          [platformId]: { status: "error", message: data.message, details: data.details },
+        }))
+      }
+    } catch (error: any) {
+      console.error(`Error testing ${platformId} integration:`, error)
+      setIntegrationStatuses((prev) => ({
+        ...prev,
+        [platformId]: { status: "error", message: `Failed to test integration: ${error.message || "Unknown error"}` },
+      }))
+    }
+  }
+
   if (loading) {
     return (
       <Card>
@@ -211,6 +249,12 @@ export function CredentialsManager() {
           name: "LinkedIn",
           description: "Import professional projects and skills",
           docsUrl: "https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow",
+        },
+        {
+          id: "github",
+          name: "GitHub",
+          description: "Import projects and contributions",
+          docsUrl: "https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps",
         },
         {
           id: "credly",
@@ -358,24 +402,56 @@ export function CredentialsManager() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {credentials[platform.id as keyof AllCredentials]?.configured ? (
-                            <>
-                              <CheckCircle className="h-5 w-5 text-green-500" />
-                              <span className="text-sm text-green-600">Configured</span>
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle className="h-5 w-5 text-yellow-500" />
-                              <span className="text-sm text-yellow-600">Not configured</span>
-                            </>
-                          )}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {credentials[platform.id as keyof AllCredentials]?.configured ? (
+                              <>
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                <span className="text-sm text-green-600">Configured</span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                                <span className="text-sm text-yellow-600">Not configured</span>
+                              </>
+                            )}
+                          </div>
+                          <Button type="submit" disabled={saving === platform.id}>
+                            <Save className="h-4 w-4 mr-2" />
+                            {saving === platform.id ? "Saving..." : "Save Credentials"}
+                          </Button>
                         </div>
-                        <Button type="submit" disabled={saving === platform.id}>
-                          <Save className="h-4 w-4 mr-2" />
-                          {saving === platform.id ? "Saving..." : "Save Credentials"}
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          disabled={!!integrationStatuses[platform.id]?.status === "loading"}
+                          onClick={() => handleTestIntegration(platform.id)}
+                        >
+                          {integrationStatuses[platform.id]?.status === "loading" ? "Testing..." : "Test Connection"}
                         </Button>
+
+                        {integrationStatuses[platform.id]?.status === "error" && (
+                          <Alert variant="destructive">
+                            <AlertTitle>Test Failed</AlertTitle>
+                            <AlertDescription>
+                              {integrationStatuses[platform.id].message}
+                              {integrationStatuses[platform.id].details && (
+                                <pre className="mt-2 rounded bg-muted p-2">
+                                  <code>{JSON.stringify(integrationStatuses[platform.id].details, null, 2)}</code>
+                                </pre>
+                              )}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        {integrationStatuses[platform.id]?.status === "success" && (
+                          <Alert variant="success">
+                            <AlertTitle>Test Successful</AlertTitle>
+                            <AlertDescription>{integrationStatuses[platform.id].message}</AlertDescription>
+                          </Alert>
+                        )}
                       </div>
                     </form>
                   </CardContent>
