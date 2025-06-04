@@ -7,13 +7,11 @@ import { DigitalBadgesSection } from "./digital-badges-section"
 import { LoadingSpinner } from "./ui/loading-spinner"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useToast } from "@/hooks/use-toast"
 
 export function HeroSection() {
   const [siteInfo, setSiteInfo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [imageLoaded, setImageLoaded] = useState(false)
-  const { toast } = useToast()
 
   useEffect(() => {
     fetch("/api/site-info")
@@ -28,13 +26,8 @@ export function HeroSection() {
       .catch((error) => {
         console.error("Error loading site info:", error)
         setLoading(false)
-        toast({
-          title: "Loading Error",
-          description: "Some content may not display correctly. Please refresh the page.",
-          variant: "destructive",
-        })
       })
-  }, [toast])
+  }, [])
 
   if (loading) {
     return (
@@ -55,21 +48,19 @@ export function HeroSection() {
           <div className="space-y-8 text-center lg:text-left">
             <div className="space-y-6">
               <div className="space-y-2">
-                <p className="text-sm font-medium text-primary tracking-wider uppercase animate-fade-in">
-                  Cybersecurity Professional
-                </p>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight animate-fade-in-up">
+                <p className="text-sm font-medium text-primary tracking-wider uppercase">Cybersecurity Professional</p>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
                   Securing Digital
                   <span className="block text-primary">Infrastructure</span>
                 </h1>
               </div>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed animate-fade-in-up delay-200">
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed">
                 Passionate about protecting digital assets and building secure systems. Specializing in penetration
                 testing, incident response, and security architecture with proven expertise in threat analysis.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up delay-400">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link href="/projects">
                 <Button size="lg" className="group min-w-[160px] transition-all hover:scale-105">
                   View My Work
@@ -95,7 +86,7 @@ export function HeroSection() {
           </div>
 
           {/* Avatar Image */}
-          <div className="flex flex-col items-center space-y-8 animate-fade-in-up delay-300">
+          <div className="flex flex-col items-center space-y-8">
             <div className="relative">
               <div className="w-72 h-72 lg:w-80 lg:h-80 rounded-full overflow-hidden border-4 border-primary/20 shadow-2xl bg-gradient-to-br from-primary/5 to-secondary/5">
                 {!imageLoaded && (
@@ -113,19 +104,12 @@ export function HeroSection() {
                   }`}
                   priority
                   onLoad={() => setImageLoaded(true)}
-                  onError={() => {
-                    setImageLoaded(true)
-                    toast({
-                      title: "Image Loading Error",
-                      description: "Profile image could not be loaded.",
-                      variant: "destructive",
-                    })
-                  }}
+                  onError={() => setImageLoaded(true)}
                 />
               </div>
               {/* Decorative elements */}
               <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-secondary/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-secondary/10 rounded-full blur-2xl animate-pulse"></div>
             </div>
 
             {/* Digital Badges beneath photo */}
