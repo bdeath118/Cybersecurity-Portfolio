@@ -1,7 +1,0 @@
-{
-  "scripts": {
-    "clean-install": "rm -rf node_modules package-lock.json && npm install --legacy-peer-deps",
-    "build-safe": "npm run clean-install && npm run build",
-    "deploy-check": "npm run type-check && npm run lint && npm run build"
-  }
-}
