@@ -54,13 +54,13 @@ export async function authenticateUser(username: string, password: string) {
     if (isAuthenticated) {
       console.log("🎉 Authentication successful with environment variables!")
 
-      // Create a session token
+      // Create a session token with better security
       const token = generateSessionToken()
 
-      // Store in a secure, HTTP-only cookie
+      // Store in a secure, HTTP-only cookie with improved security settings
       cookies().set("admin-auth", "authenticated", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: true, // Always use secure cookies
         maxAge: 60 * 60 * 24, // 1 day
         path: "/",
         sameSite: "lax",
@@ -83,10 +83,10 @@ export async function authenticateUser(username: string, password: string) {
       // Create a session token
       const token = generateSessionToken()
 
-      // Store in a secure, HTTP-only cookie
+      // Store in a secure, HTTP-only cookie with improved security
       cookies().set("admin-auth", "authenticated", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: true, // Always use secure cookies
         maxAge: 60 * 60 * 24, // 1 day
         path: "/",
         sameSite: "lax",

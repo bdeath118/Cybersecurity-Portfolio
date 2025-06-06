@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cybersecurity-portfolio-bdeath118.vercel.app/sitemap.xml

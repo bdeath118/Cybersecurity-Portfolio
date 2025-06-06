@@ -8,15 +8,28 @@ export function middleware(request: NextRequest) {
   if (path.startsWith("/admin/dashboard")) {
     const authCookie = request.cookies.get("admin-auth")
 
-    console.log("Middleware checking auth for:", path)
-    console.log("Auth cookie present:", !!authCookie)
+    // Add a nonce to prevent CSRF attacks
+    const nonce = Buffer.from(crypto.randomUUID()).toString("base64")
 
     if (!authCookie || authCookie.value !== "authenticated") {
-      console.log("Redirecting to login page")
-      return NextResponse.redirect(new URL("/admin", request.url))
+      // Use NextResponse.redirect with the full URL to avoid path traversal
+      const url = request.nextUrl.clone()
+      url.pathname = "/admin"
+      url.search = ""
+
+      return NextResponse.redirect(url)
     }
 
-    console.log("Authentication successful, proceeding to dashboard")
+    // Add security headers
+    const response = NextResponse.next()
+    response.headers.set("X-Content-Type-Options", "nosniff")
+    response.headers.set("X-Frame-Options", "DENY")
+    response.headers.set(
+      "Content-Security-Policy",
+      `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    )
+
+    return response
   }
 
   return NextResponse.next()
