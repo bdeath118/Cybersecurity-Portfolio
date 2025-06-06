@@ -62,13 +62,13 @@ export function HeroSection() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link href="/projects">
-                <Button size="lg" className="group min-w-[160px] transition-all hover:scale-105">
+                <Button size="lg" className="group min-w-[160px]">
                   View My Work
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               {siteInfo?.resume ? (
-                <Button variant="outline" size="lg" asChild className="min-w-[160px] transition-all hover:scale-105">
+                <Button variant="outline" size="lg" asChild className="min-w-[160px]">
                   <a href={siteInfo.resume} target="_blank" rel="noopener noreferrer">
                     <Download className="mr-2 h-4 w-4" />
                     Download Resume
@@ -76,7 +76,7 @@ export function HeroSection() {
                 </Button>
               ) : (
                 <Link href="/contact">
-                  <Button variant="outline" size="lg" className="min-w-[160px] transition-all hover:scale-105">
+                  <Button variant="outline" size="lg" className="min-w-[160px]">
                     <Mail className="mr-2 h-4 w-4" />
                     Get In Touch
                   </Button>
@@ -108,8 +108,8 @@ export function HeroSection() {
                 />
               </div>
               {/* Decorative elements */}
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-secondary/10 rounded-full blur-2xl animate-pulse"></div>
+              <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl"></div>
+              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-secondary/10 rounded-full blur-2xl"></div>
             </div>
 
             {/* Digital Badges beneath photo */}
