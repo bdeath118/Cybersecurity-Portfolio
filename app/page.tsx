@@ -2,77 +2,25 @@ import { HeroSection } from "@/components/hero-section"
 import { ProjectsShowcase } from "@/components/projects-showcase"
 import { SkillsSection } from "@/components/skills-section"
 import { DigitalBadgesSection } from "@/components/digital-badges-section"
-import {
-  getSiteInfo,
-  getProjects,
-  getSkills,
-  getCertifications,
-  getCTFEvents,
-  getDigitalBadges,
-  initializeApplication,
-} from "@/lib/data"
 
 export async function generateMetadata() {
-  try {
-    const siteInfo = await getSiteInfo()
-    return {
-      title: `${siteInfo.name} - ${siteInfo.title}`,
-      description: siteInfo.description,
-      keywords: ["cybersecurity", "portfolio", "ethical hacking", "security", "penetration testing"],
-      openGraph: {
-        title: `${siteInfo.name} - ${siteInfo.title}`,
-        description: siteInfo.description,
-        type: "website",
-      },
-    }
-  } catch (error) {
-    console.error("Error generating metadata:", error)
-    return {
+  return {
+    title: "Cybersecurity Portfolio",
+    description: "Professional cybersecurity portfolio showcasing skills, projects, certifications, and achievements.",
+    keywords: ["cybersecurity", "portfolio", "ethical hacking", "security", "penetration testing"],
+    openGraph: {
       title: "Cybersecurity Portfolio",
       description:
         "Professional cybersecurity portfolio showcasing skills, projects, certifications, and achievements.",
-    }
+      type: "website",
+    },
   }
 }
 
-export default async function HomePage() {
-  let siteInfo
-  let projects = []
-  let skills = []
-  let certifications = []
-  let ctfEvents = []
-  let digitalBadges = []
-
-  try {
-    await initializeApplication()
-
-    siteInfo = await getSiteInfo()
-    projects = await getProjects()
-    skills = await getSkills()
-    certifications = await getCertifications()
-    ctfEvents = await getCTFEvents()
-    digitalBadges = await getDigitalBadges()
-  } catch (error) {
-    console.error("Error loading page data:", error)
-    siteInfo = {
-      name: "Cybersecurity Professional",
-      title: "Cybersecurity Portfolio",
-      description: "Welcome to my cybersecurity portfolio showcasing skills, projects, and achievements.",
-      email: "contact@example.com",
-      github: "https://github.com",
-      linkedin: "https://linkedin.com",
-      twitter: "https://twitter.com",
-      theme: {
-        primaryColor: "#3b82f6",
-        secondaryColor: "#1e40af",
-        backgroundColor: "#ffffff",
-        textColor: "#1f2937",
-      },
-      icon: "/images/avatar-photo.jpg",
-      backgroundImage: "/images/background.jpeg",
-      backgroundOpacity: 80,
-    }
-  }
+export default function HomePage() {
+  const projects = []
+  const skills = []
+  const digitalBadges = []
 
   return (
     <main className="container mx-auto px-4 py-8">
