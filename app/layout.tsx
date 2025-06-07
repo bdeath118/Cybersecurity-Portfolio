@@ -4,26 +4,53 @@ import { Inter } from "next/font/google"
 import { CustomThemeProvider } from "@/components/custom-theme-provider"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { getSiteInfo } from "@/lib/data"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export async function generateMetadata() {
-  return {
-    title: "Cyber Security Portfolio",
-    description: "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
-    icons: {
-      icon: "/favicon.ico",
-    },
-    openGraph: {
+  try {
+    const siteInfo = await getSiteInfo()
+
+    return {
+      title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
+      description:
+        siteInfo.description || "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+      icons: {
+        icon: siteInfo.icon || "/favicon.ico",
+      },
+      openGraph: {
+        title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
+        description:
+          siteInfo.description ||
+          "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+        type: "website",
+        images: [
+          {
+            url: siteInfo.backgroundImage || "/images/background.jpeg",
+            width: 1200,
+            height: 630,
+            alt: "Cybersecurity Portfolio",
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
+        description:
+          siteInfo.description ||
+          "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+      },
+    }
+  } catch (error) {
+    console.error("Error generating metadata:", error)
+    return {
       title: "Cyber Security Portfolio",
       description: "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: "Cyber Security Portfolio",
-      description: "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
-    },
+      icons: {
+        icon: "/favicon.ico",
+      },
+    }
   }
 }
 
