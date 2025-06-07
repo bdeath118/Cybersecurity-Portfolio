@@ -14,7 +14,6 @@ export async function generateMetadata() {
 }
 
 export default async function AdminDashboardPage() {
-  // Check authentication on the server side
   const cookieStore = cookies()
   const authCookie = cookieStore.get("admin-auth")
 

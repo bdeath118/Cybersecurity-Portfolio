@@ -44,10 +44,8 @@ export default async function HomePage() {
   let digitalBadges = []
 
   try {
-    // Initialize application first
     await initializeApplication()
 
-    // Load all data
     siteInfo = await getSiteInfo()
     projects = await getProjects()
     skills = await getSkills()
@@ -56,7 +54,6 @@ export default async function HomePage() {
     digitalBadges = await getDigitalBadges()
   } catch (error) {
     console.error("Error loading page data:", error)
-    // Use default values if there's an error
     siteInfo = {
       name: "Cybersecurity Professional",
       title: "Cybersecurity Portfolio",
