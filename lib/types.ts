@@ -141,6 +141,13 @@ export interface SiteInfo {
     lastImport?: string
     importFrequency: "daily" | "weekly" | "manual"
   }
+  underConstructionMode?: {
+    enabled: boolean
+    message: string
+    estimatedCompletion: string
+    progressPercentage: number
+    allowAdminAccess: boolean
+  }
 }
 
 export interface LinkedInProfile {
@@ -187,6 +194,7 @@ export interface ImportSettings {
   hacktheboxUsername?: string
   // Bug Bounty Platform Settings
   hackeroneUsername?: string
+  hackeroneApiToken?: string
   bugcrowdUsername?: string
   // Blog Platform Settings
   mediumUsername?: string

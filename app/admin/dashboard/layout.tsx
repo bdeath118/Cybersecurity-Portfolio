@@ -11,7 +11,7 @@ export async function generateMetadata() {
   }
 }
 
-export default function AdminLayout({
+export default function AdminDashboardLayout({
   children,
 }: {
   children: React.ReactNode

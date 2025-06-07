@@ -1,0 +1,15 @@
+{
+  "name": "cybersec-under-construction",
+  "version": "1.0.0",
+  "description": "Under Construction page for Cybersecurity Portfolio",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Building under construction page...'",
+    "start": "echo 'Under construction page ready'",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+}

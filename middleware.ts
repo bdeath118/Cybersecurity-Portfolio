@@ -1,40 +1,50 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { getUnderConstructionSettings } from "@/lib/data"
 
-export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-  // Only protect dashboard routes
-  if (path.startsWith("/admin/dashboard")) {
-    const authCookie = request.cookies.get("admin-auth")
+  // Skip middleware for API routes, static files, and admin paths
+  if (
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/admin") ||
+    pathname === "/under-construction" ||
+    pathname.includes(".")
+  ) {
+    return NextResponse.next()
+  }
 
-    // Add a nonce to prevent CSRF attacks
-    const nonce = Buffer.from(crypto.randomUUID()).toString("base64")
+  try {
+    // Check if under construction mode is enabled
+    const settings = await getUnderConstructionSettings()
 
-    if (!authCookie || authCookie.value !== "authenticated") {
-      // Use NextResponse.redirect with the full URL to avoid path traversal
-      const url = request.nextUrl.clone()
-      url.pathname = "/admin"
-      url.search = ""
+    if (settings.enabled && settings.allowAdminAccess) {
+      // Check if user is authenticated admin
+      const authCookie = request.cookies.get("admin-auth")
 
-      return NextResponse.redirect(url)
+      // If not authenticated admin, redirect to under construction
+      if (!authCookie || authCookie.value !== "authenticated") {
+        return NextResponse.redirect(new URL("/under-construction", request.url))
+      }
     }
-
-    // Add security headers
-    const response = NextResponse.next()
-    response.headers.set("X-Content-Type-Options", "nosniff")
-    response.headers.set("X-Frame-Options", "DENY")
-    response.headers.set(
-      "Content-Security-Policy",
-      `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    )
-
-    return response
+  } catch (error) {
+    console.error("Middleware error:", error)
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/admin/dashboard/:path*"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 }

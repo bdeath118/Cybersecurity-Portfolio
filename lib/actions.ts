@@ -20,6 +20,7 @@ import {
   updateDigitalBadge,
   deleteDigitalBadge,
   logoutUser,
+  updateUnderConstructionSettings,
 } from "@/lib/data"
 import { BadgeIntegration } from "@/lib/badge-integration"
 import { LinkedInIntegration } from "@/lib/linkedin-integration"
@@ -458,6 +459,86 @@ export async function removeDigitalBadge(id: string) {
   return { success }
 }
 
+// Bug Bounty Finding actions
+export async function saveBugBountyFinding(formData: FormData) {
+  const title = formData.get("title") as string
+  const platform = formData.get("platform") as "hackerone" | "bugcrowd" | "intigriti" | "other"
+  const severity = formData.get("severity") as "critical" | "high" | "medium" | "low" | "info"
+  const status = formData.get("status") as "resolved" | "triaged" | "duplicate" | "not-applicable"
+  const bounty = Number(formData.get("bounty") as string) || 0
+  const date = formData.get("date") as string
+  const description = formData.get("description") as string
+  const cve = formData.get("cve") as string
+  const reportUrl = formData.get("reportUrl") as string
+  const company = formData.get("company") as string
+
+  const finding = {
+    id: Date.now().toString(),
+    title,
+    platform,
+    severity,
+    status,
+    bounty,
+    date,
+    description,
+    cve,
+    reportUrl,
+    company,
+  }
+
+  // Save to bug bounty findings
+  const { addBugBountyFinding } = await import("@/lib/data")
+  const savedFinding = await addBugBountyFinding(finding)
+
+  revalidatePath("/")
+  revalidatePath("/admin/dashboard")
+  return { success: true, finding: savedFinding }
+}
+
+export async function createBugBountyFinding(formData: FormData) {
+  return saveBugBountyFinding(formData)
+}
+
+export async function editBugBountyFinding(id: string, formData: FormData) {
+  const title = formData.get("title") as string
+  const platform = formData.get("platform") as "hackerone" | "bugcrowd" | "intigriti" | "other"
+  const severity = formData.get("severity") as "critical" | "high" | "medium" | "low" | "info"
+  const status = formData.get("status") as "resolved" | "triaged" | "duplicate" | "not-applicable"
+  const bounty = Number(formData.get("bounty") as string) || 0
+  const date = formData.get("date") as string
+  const description = formData.get("description") as string
+  const cve = formData.get("cve") as string
+  const reportUrl = formData.get("reportUrl") as string
+  const company = formData.get("company") as string
+
+  const { updateBugBountyFinding } = await import("@/lib/data")
+  const finding = await updateBugBountyFinding(id, {
+    title,
+    platform,
+    severity,
+    status,
+    bounty,
+    date,
+    description,
+    cve,
+    reportUrl,
+    company,
+  })
+
+  revalidatePath("/")
+  revalidatePath("/admin/dashboard")
+  return { success: true, finding }
+}
+
+export async function removeBugBountyFinding(id: string) {
+  const { deleteBugBountyFinding } = await import("@/lib/data")
+  const success = await deleteBugBountyFinding(id)
+
+  revalidatePath("/")
+  revalidatePath("/admin/dashboard")
+  return { success }
+}
+
 // Import actions
 export async function updateImportSettings(formData: FormData) {
   // Get current site info first
@@ -608,4 +689,25 @@ export async function exportData() {
 export async function runSecurityScan() {
   // Implementation would go here
   return { success: true, vulnerabilities: [] }
+}
+
+// Under Construction actions
+export async function updateUnderConstructionMode(formData: FormData) {
+  const enabled = formData.get("enabled") === "true"
+  const message = formData.get("message") as string
+  const estimatedCompletion = formData.get("estimatedCompletion") as string
+  const progressPercentage = Number.parseInt(formData.get("progressPercentage") as string)
+  const allowAdminAccess = formData.get("allowAdminAccess") === "true"
+
+  const settings = await updateUnderConstructionSettings({
+    enabled,
+    message,
+    estimatedCompletion,
+    progressPercentage,
+    allowAdminAccess,
+  })
+
+  revalidatePath("/")
+  revalidatePath("/admin/dashboard")
+  return { success: true, settings }
 }

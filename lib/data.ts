@@ -10,13 +10,28 @@ const CERTIFICATIONS_FILE = path.join(DATA_DIR, "certifications.json")
 const CTF_EVENTS_FILE = path.join(DATA_DIR, "ctf-events.json")
 const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json")
 const DIGITAL_BADGES_FILE = path.join(DATA_DIR, "digital-badges.json")
+const BUG_BOUNTY_FILE = path.join(DATA_DIR, "bug-bounty.json")
+const UNDER_CONSTRUCTION_FILE = path.join(DATA_DIR, "under-construction.json")
 
 // Ensure data directory exists
-async function ensureDataDir() {
+export async function ensureDataDir() {
   try {
     await fs.access(DATA_DIR)
   } catch {
     await fs.mkdir(DATA_DIR, { recursive: true })
+  }
+}
+
+// Initialize application
+export async function initializeApplication() {
+  try {
+    await ensureDataDir()
+    // Initialize with default data if files don't exist
+    await getSiteInfo()
+    return true
+  } catch (error) {
+    console.error("Error initializing application:", error)
+    return false
   }
 }
 
@@ -68,17 +83,25 @@ const defaultSiteInfo: SiteInfo = {
     badgesEnabled: true,
     importFrequency: "daily",
   },
+  underConstructionMode: {
+    enabled: false,
+    message: "We're working hard to bring you something amazing.",
+    estimatedCompletion: "Soon",
+    progressPercentage: 75,
+    allowAdminAccess: true,
+  },
 }
 
-// Generic data read/write functions for backward compatibility
-export async function readData<T>(filename: string, defaultValue: T): Promise<T> {
-  const filePath = path.join(DATA_DIR, `${filename}.json`)
-  return readJsonFile(filePath, defaultValue)
+// Site Info
+export async function getSiteInfo(): Promise<SiteInfo> {
+  return readJsonFile(SITE_INFO_FILE, defaultSiteInfo)
 }
 
-export async function writeData<T>(filename: string, data: T): Promise<void> {
-  const filePath = path.join(DATA_DIR, `${filename}.json`)
-  return writeJsonFile(filePath, data)
+export async function updateSiteInfo(updates: Partial<SiteInfo>): Promise<SiteInfo> {
+  const currentInfo = await getSiteInfo()
+  const updatedInfo = { ...currentInfo, ...updates }
+  await writeJsonFile(SITE_INFO_FILE, updatedInfo)
+  return updatedInfo
 }
 
 // Projects
@@ -266,46 +289,76 @@ export async function deleteDigitalBadge(id: string): Promise<boolean> {
   return true
 }
 
-// Site Info
-export async function getSiteInfo(): Promise<SiteInfo> {
-  return readJsonFile(SITE_INFO_FILE, defaultSiteInfo)
+// Bug Bounty Findings
+export async function getBugBountyFindings(): Promise<any[]> {
+  return readJsonFile(BUG_BOUNTY_FILE, [])
 }
 
-export async function updateSiteInfo(updates: Partial<SiteInfo>): Promise<SiteInfo> {
-  const currentInfo = await getSiteInfo()
-  const updatedInfo = { ...currentInfo, ...updates }
-  await writeJsonFile(SITE_INFO_FILE, updatedInfo)
-  return updatedInfo
+export async function addBugBountyFinding(finding: any): Promise<any> {
+  const findings = await getBugBountyFindings()
+  const newFinding = {
+    ...finding,
+    id: finding.id || Date.now().toString(),
+  }
+  findings.push(newFinding)
+  await writeJsonFile(BUG_BOUNTY_FILE, findings)
+  return newFinding
+}
+
+export async function updateBugBountyFinding(id: string, updates: any): Promise<any | null> {
+  const findings = await getBugBountyFindings()
+  const index = findings.findIndex((f: any) => f.id === id)
+  if (index === -1) return null
+
+  findings[index] = { ...findings[index], ...updates }
+  await writeJsonFile(BUG_BOUNTY_FILE, findings)
+  return findings[index]
+}
+
+export async function deleteBugBountyFinding(id: string): Promise<boolean> {
+  const findings = await getBugBountyFindings()
+  const filteredFindings = findings.filter((f: any) => f.id !== id)
+  if (filteredFindings.length === findings.length) return false
+
+  await writeJsonFile(BUG_BOUNTY_FILE, filteredFindings)
+  return true
+}
+
+export async function getBugBountyFindingById(id: string): Promise<any | null> {
+  const findings = await getBugBountyFindings()
+  return findings.find((f: any) => f.id === id) || null
+}
+
+// Under Construction Settings
+export async function getUnderConstructionSettings() {
+  return readJsonFile(UNDER_CONSTRUCTION_FILE, {
+    enabled: false,
+    message: "We're working hard to bring you something amazing.",
+    estimatedCompletion: "Soon",
+    progressPercentage: 75,
+    allowAdminAccess: true,
+  })
+}
+
+export async function updateUnderConstructionSettings(settings: any) {
+  const currentSettings = await getUnderConstructionSettings()
+  const updatedSettings = { ...currentSettings, ...settings }
+  await writeJsonFile(UNDER_CONSTRUCTION_FILE, updatedSettings)
+  return updatedSettings
 }
 
 // Session management (simplified)
 let currentSession: { userId: string; username: string } | null = null
 
 export async function loginUser(username: string, password: string): Promise<boolean> {
-  // Simple hash function for password comparison
-  const simpleHash = (str: string) => {
-    let hash = 0
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i)
-      hash = (hash << 5) - hash + char
-      hash = hash & hash // Convert to 32bit integer
-    }
-    return hash.toString()
-  }
-
   const adminUsername = process.env.ADMIN_USERNAME || "admin"
   const adminPassword = process.env.ADMIN_PASSWORD || "admin123"
 
-  console.log("Login attempt:", { username, providedPassword: password })
-  console.log("Expected credentials:", { adminUsername, adminPassword })
-
   if (username === adminUsername && password === adminPassword) {
     currentSession = { userId: "admin", username }
-    console.log("Login successful")
     return true
   }
 
-  console.log("Login failed")
   return false
 }
 
@@ -343,4 +396,15 @@ export async function getCTFEventById(id: string): Promise<CTFEvent | null> {
 
 export async function getProjectById(id: string): Promise<Project | null> {
   return getProject(id)
+}
+
+// Generic data read/write functions for backward compatibility
+export async function readData<T>(filename: string, defaultValue: T): Promise<T> {
+  const filePath = path.join(DATA_DIR, `${filename}.json`)
+  return readJsonFile(filePath, defaultValue)
+}
+
+export async function writeData<T>(filename: string, data: T): Promise<void> {
+  const filePath = path.join(DATA_DIR, `${filename}.json`)
+  return writeJsonFile(filePath, data)
 }

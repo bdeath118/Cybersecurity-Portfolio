@@ -11,28 +11,14 @@ import { getProject } from "@/lib/data"
 export async function generateMetadata({ params }: { params: { id: string } }) {
   try {
     const project = await getProject(params.id)
-
-    if (!project) {
-      return {
-        title: "Project Not Found | Cyber Security Portfolio",
-        description: "The requested project could not be found.",
-      }
-    }
-
     return {
-      title: `${project.title} | Cyber Security Portfolio`,
-      description: project.summary || project.description.substring(0, 160),
-      openGraph: {
-        title: project.title,
-        description: project.summary || project.description.substring(0, 160),
-        images: project.image ? [{ url: project.image }] : undefined,
-      },
+      title: `${project.title} | Projects`,
+      description: project.description,
     }
   } catch (error) {
-    console.error("Error generating metadata:", error)
     return {
       title: "Project | Cyber Security Portfolio",
-      description: "View cybersecurity project details",
+      description: "View project details",
     }
   }
 }
