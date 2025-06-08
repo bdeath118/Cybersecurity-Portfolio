@@ -1,8 +1,16 @@
-export default function AdminPage() {
-  return (
-    <div>
-      <h1>Admin Login</h1>
-      <p>Admin access page</p>
-    </div>
-  )
+import AdminLoginPageClient from "./AdminLoginPageClient"
+
+export async function generateMetadata() {
+  return {
+    title: "Admin Login | Cyber Security Portfolio",
+    description: "Admin login page",
+    robots: {
+      index: false,
+      follow: false,
+    },
+  }
+}
+
+export default function AdminLoginPage() {
+  return <AdminLoginPageClient />
 }
