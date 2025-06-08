@@ -229,16 +229,28 @@ export function LinkedAccountsManager() {
     async function fetchAccounts() {
       try {
         const response = await fetch("/api/integrations")
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
+
+        // Check if response is actually JSON
+        const contentType = response.headers.get("content-type")
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response is not JSON")
+        }
+
         const data = await response.json()
-        setAccounts(data)
+        setAccounts(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error("Error fetching linked accounts:", error)
+
+        // Set empty array as fallback
+        setAccounts([])
+
         toast({
           title: "Error",
-          description: "Failed to load linked accounts",
+          description: "Failed to load linked accounts. Using default data.",
           variant: "destructive",
         })
       } finally {
@@ -275,12 +287,18 @@ export function LinkedAccountsManager() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to refresh account data")
+        // Try to get error message from response
+        let errorMessage = "Failed to refresh account data"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorMessage
+        } catch {
+          // If response is not JSON, use default message
+        }
+        throw new Error(errorMessage)
       }
 
       const updatedAccount = await response.json()
-
       setAccounts((prev) => prev.map((account) => (account.id === accountId ? updatedAccount : account)))
 
       toast({
@@ -307,8 +325,14 @@ export function LinkedAccountsManager() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to disconnect account")
+        let errorMessage = "Failed to disconnect account"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorMessage
+        } catch {
+          // If response is not JSON, use default message
+        }
+        throw new Error(errorMessage)
       }
 
       setAccounts((prev) => prev.filter((account) => account.id !== accountId))
@@ -367,13 +391,19 @@ export function LinkedAccountsManager() {
 
   const handleTestIntegration = async (platformId: string) => {
     try {
-      const response = await fetch(`/api/integrations/${platformId}/test`, {
+      const response = await fetch(`/api/integrations/test/${platformId}`, {
         method: "POST",
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Integration test failed")
+        let errorMessage = "Integration test failed"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorMessage
+        } catch {
+          // If response is not JSON, use default message
+        }
+        throw new Error(errorMessage)
       }
 
       toast({
