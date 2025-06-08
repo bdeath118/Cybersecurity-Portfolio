@@ -1,6 +1,9 @@
 import { readFileSync, readdirSync } from "fs"
 import { join } from "path"
 
+// This is a utility script to check for metadata conflicts
+// It should NOT have any metadata exports itself
+
 function checkMetadataConflicts(dir) {
   const conflicts = []
 
@@ -46,4 +49,4 @@ if (conflicts.length > 0) {
 console.log("\n📋 Metadata export summary:")
 console.log('- Use "export const metadata = {...}" for static metadata')
 console.log('- Use "export async function generateMetadata() {...}" for dynamic metadata')
-console.log("- Use only one of them in the same file")
+console.log("- Never use both in the same file")
