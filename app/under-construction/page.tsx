@@ -30,15 +30,19 @@ export default function UnderConstructionPage() {
     const adminAuth = document.cookie.includes("admin-auth=authenticated")
     setIsAdmin(adminAuth)
 
-    // Load settings from API
+    // Load settings from API with error handling
     fetch("/api/under-construction")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch")
+        return res.json()
+      })
       .then((data) => {
-        if (data.success) {
-          setSettings(data.settings)
+        if (data.success && data.settings) {
+          setSettings((prev) => ({ ...prev, ...data.settings }))
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn("Failed to load construction settings, using defaults:", error)
         // Use default settings if API fails
       })
   }, [])
@@ -74,6 +78,10 @@ export default function UnderConstructionPage() {
               </Button>
             </div>
           )}
+
+          <div className="mt-8 text-sm text-gray-500">
+            <p>Thank you for your patience while we enhance your cybersecurity experience.</p>
+          </div>
         </CardContent>
       </Card>
     </div>

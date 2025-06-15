@@ -4,7 +4,7 @@
 export const siteConfig = {
   // Under Construction Mode
   underConstruction: {
-    enabled: false, // Set to true to enable under construction mode
+    enabled: true, // Set to true to enable under construction mode
     redirectPath: "/under-construction",
     allowedPaths: ["/admin", "/under-construction", "/api"], // Paths that bypass the redirect
     message: "We're working hard to bring you something amazing.",

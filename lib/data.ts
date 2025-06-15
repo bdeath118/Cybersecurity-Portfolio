@@ -84,7 +84,7 @@ const defaultSiteInfo: SiteInfo = {
     importFrequency: "daily",
   },
   underConstructionMode: {
-    enabled: false,
+    enabled: true, // Changed to true for construction mode
     message: "We're working hard to bring you something amazing.",
     estimatedCompletion: "Soon",
     progressPercentage: 75,
@@ -332,7 +332,7 @@ export async function getBugBountyFindingById(id: string): Promise<any | null> {
 // Under Construction Settings
 export async function getUnderConstructionSettings() {
   return readJsonFile(UNDER_CONSTRUCTION_FILE, {
-    enabled: false,
+    enabled: true, // Changed to true for construction mode
     message: "We're working hard to bring you something amazing.",
     estimatedCompletion: "Soon",
     progressPercentage: 75,
