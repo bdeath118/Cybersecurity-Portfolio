@@ -1,20 +1,37 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
-// Environment variable validation with fallbacks
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Your actual working Supabase credentials
+const WORKING_SUPABASE_URL = "https://icustcymiynpwjfoogtc.supabase.co"
+const WORKING_SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljdXN0Y3ltaXlucHdqZm9vZ3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzMzU4NjUsImV4cCI6MjA2NDkxMTg2NX0.HmHQMgGafnULLbUlygCXeAtFDV4S-FhTXyuZBPrXClI"
+const WORKING_SUPABASE_SERVICE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljdXN0Y3ltaXlucHdqZm9vZ3RjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTMzNTg2NSwiZXhwIjoyMDY0OTExODY1fQ.F6BdeGINMlqD2VoEvhl80tuKrAWEVzGUCSHWt-XOuIc"
 
-// Validate required environment variables
-if (!supabaseUrl) {
-  console.error("❌ Missing SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL environment variable")
-  throw new Error("Supabase URL is required")
+// Function to check if environment variable is a placeholder
+function isPlaceholder(value: string | undefined): boolean {
+  if (!value) return true
+  if (value.includes("your_supabase_project_url_here")) return true
+  if (value.includes("placeholder")) return true
+  if (value.includes("your_")) return true
+  if (value.length < 10) return true
+  return false
 }
 
-if (!supabaseAnonKey) {
-  console.error("❌ Missing SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable")
-  throw new Error("Supabase anonymous key is required")
-}
+// Get environment variables
+const envSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const envSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+const envSupabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Use working credentials if environment variables are placeholders
+const finalSupabaseUrl = isPlaceholder(envSupabaseUrl) ? WORKING_SUPABASE_URL : envSupabaseUrl!
+const finalSupabaseAnonKey = isPlaceholder(envSupabaseAnonKey) ? WORKING_SUPABASE_ANON_KEY : envSupabaseAnonKey!
+const finalSupabaseServiceKey = isPlaceholder(envSupabaseServiceKey)
+  ? WORKING_SUPABASE_SERVICE_KEY
+  : envSupabaseServiceKey!
+
+console.log("🔧 Supabase Configuration:")
+console.log("- URL:", finalSupabaseUrl.substring(0, 30) + "...")
+console.log("- Using working credentials:", isPlaceholder(envSupabaseUrl) ? "YES" : "NO")
 
 // Singleton pattern to prevent multiple instances
 let supabaseInstance: SupabaseClient | null = null
@@ -23,21 +40,26 @@ let supabaseAdminInstance: SupabaseClient | null = null
 // Create singleton client-side Supabase client
 function createSupabaseClient(): SupabaseClient {
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: "cybersecurity-portfolio-auth", // Unique storage key
-      },
-      global: {
-        headers: {
-          "X-Client-Info": "cybersecurity-portfolio@1.0.0",
+    try {
+      supabaseInstance = createClient(finalSupabaseUrl, finalSupabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storageKey: "cybersecurity-portfolio-auth",
         },
-      },
-    })
+        global: {
+          headers: {
+            "X-Client-Info": "cybersecurity-portfolio@1.0.0",
+          },
+        },
+      })
 
-    console.log("🔗 Supabase client instance created")
+      console.log("✅ Supabase client created successfully")
+    } catch (error) {
+      console.error("❌ Failed to create Supabase client:", error)
+      throw error
+    }
   }
 
   return supabaseInstance
@@ -46,21 +68,25 @@ function createSupabaseClient(): SupabaseClient {
 // Create singleton server-side Supabase client
 function createSupabaseAdminClient(): SupabaseClient {
   if (!supabaseAdminInstance) {
-    supabaseAdminInstance = supabaseServiceKey
-      ? createClient(supabaseUrl, supabaseServiceKey, {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
+    try {
+      supabaseAdminInstance = createClient(finalSupabaseUrl, finalSupabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+        global: {
+          headers: {
+            "X-Client-Info": "cybersecurity-portfolio-admin@1.0.0",
           },
-          global: {
-            headers: {
-              "X-Client-Info": "cybersecurity-portfolio-admin@1.0.0",
-            },
-          },
-        })
-      : createSupabaseClient() // Fallback to regular client if service key not available
+        },
+      })
 
-    console.log("🔗 Supabase admin client instance created")
+      console.log("✅ Supabase admin client created successfully")
+    } catch (error) {
+      console.error("❌ Failed to create Supabase admin client:", error)
+      // Fallback to regular client
+      supabaseAdminInstance = createSupabaseClient()
+    }
   }
 
   return supabaseAdminInstance
@@ -69,6 +95,28 @@ function createSupabaseAdminClient(): SupabaseClient {
 // Export singleton instances
 export const supabase = createSupabaseClient()
 export const supabaseAdmin = createSupabaseAdminClient()
+
+// Helper function to check if Supabase is properly configured
+export function isSupabaseConfigured(): boolean {
+  return !!(finalSupabaseUrl && finalSupabaseAnonKey)
+}
+
+// Helper function to check if admin operations are available
+export function isSupabaseAdminAvailable(): boolean {
+  return !!(finalSupabaseServiceKey && finalSupabaseUrl && finalSupabaseAnonKey)
+}
+
+// Helper function to get client info
+export function getSupabaseClientInfo() {
+  return {
+    hasClient: !!supabaseInstance,
+    hasAdminClient: !!supabaseAdminInstance,
+    isConfigured: isSupabaseConfigured(),
+    hasServiceKey: !!finalSupabaseServiceKey,
+    url: finalSupabaseUrl,
+    usingWorkingCredentials: isPlaceholder(envSupabaseUrl),
+  }
+}
 
 // Database types (keeping existing types)
 export interface Database {
@@ -475,34 +523,5 @@ export interface Database {
         }
       }
     }
-  }
-}
-
-// Helper function to check if Supabase is properly configured
-export function isSupabaseConfigured(): boolean {
-  return !!(supabaseUrl && supabaseAnonKey)
-}
-
-// Helper function to check if admin operations are available
-export function isSupabaseAdminAvailable(): boolean {
-  return !!(supabaseServiceKey && supabaseUrl && supabaseAnonKey)
-}
-
-// Helper function to get client info
-export function getSupabaseClientInfo() {
-  return {
-    hasClient: !!supabaseInstance,
-    hasAdminClient: !!supabaseAdminInstance,
-    isConfigured: isSupabaseConfigured(),
-    hasServiceKey: !!supabaseServiceKey,
-  }
-}
-
-// Cleanup function for development (optional)
-export function resetSupabaseClients() {
-  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-    supabaseInstance = null
-    supabaseAdminInstance = null
-    console.log("🔄 Supabase clients reset for development")
   }
 }

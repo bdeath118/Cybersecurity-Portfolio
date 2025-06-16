@@ -1,9 +1,5 @@
-import { dirname } from "path"
-import { fileURLToPath } from "url"
-import { FlatCompat } from "@eslint/eslintrc"
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const { FlatCompat } = require("@eslint/eslintrc")
+const path = require("path")
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
@@ -19,8 +15,7 @@ const eslintConfig = [
       "prefer-const": "warn",
       "react/no-unescaped-entities": "off",
     },
-    ignores: ["node_modules/", ".next/", "out/", "build/", "dist/", "scripts/"],
   },
 ]
 
-export default eslintConfig
+module.exports = eslintConfig

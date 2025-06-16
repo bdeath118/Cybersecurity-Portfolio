@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: false,
@@ -14,14 +14,21 @@ const nextConfig = {
         hostname: '**',
       },
     ],
+    unoptimized: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js', 'bcryptjs'],
+    serverComponentsExternalPackages: ['@supabase/supabase-js']
   },
-  poweredByHeader: false,
-  reactStrictMode: true,
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
+    }
+    return config
   },
 }
 

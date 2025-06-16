@@ -1,28 +1,24 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Basic health check
-    const healthData = {
+    const health = {
       status: "healthy",
       timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
       version: "1.0.0",
-      environment: process.env.NODE_ENV || "development",
-      checks: {
-        database: "healthy", // Would check actual database connection
-        api: "healthy",
-        memory: process.memoryUsage(),
-        uptime: process.uptime(),
-      },
     }
 
-    return NextResponse.json(healthData)
+    return NextResponse.json(health, { status: 200 })
   } catch (error) {
+    console.error("Health check failed:", error)
+
     return NextResponse.json(
       {
         status: "unhealthy",
+        error: "Health check failed",
         timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
     )

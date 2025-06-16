@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Shield, Menu, X } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 import { useCustomTheme } from "@/components/custom-theme-provider"
 
 export function SiteHeader() {
@@ -30,7 +29,9 @@ export function SiteHeader() {
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           {siteInfo?.icon ? (
-            <Image src={siteInfo.icon || "/placeholder.svg"} alt="Logo" width={28} height={28} className="h-7 w-7" />
+            <div className="h-7 w-7 bg-primary rounded flex items-center justify-center">
+              <Shield className="h-4 w-4 text-primary-foreground" />
+            </div>
           ) : (
             <Shield className="h-7 w-7 text-primary" />
           )}
