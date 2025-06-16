@@ -16,6 +16,7 @@ export async function generateMetadata() {
       title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
       description:
         siteInfo.description || "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+      generator: "Next.js",
       icons: {
         icon: siteInfo.icon || "/favicon.ico",
       },
@@ -47,6 +48,7 @@ export async function generateMetadata() {
     return {
       title: "Cyber Security Portfolio",
       description: "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+      generator: "Next.js",
       icons: {
         icon: "/favicon.ico",
       },

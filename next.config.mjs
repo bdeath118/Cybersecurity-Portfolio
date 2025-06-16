@@ -7,32 +7,18 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    domains: ['images.credly.com', 'media.licdn.com', 'avatars.githubusercontent.com'],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
       },
     ],
-    unoptimized: true,
   },
-  webpack: (config) => {
-    // Handle potential webpack issues
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-    };
-    
-    return config;
-  },
-  // Remove experimental features that might cause issues
+  serverExternalPackages: ['@supabase/supabase-js'],
   experimental: {
-    // Only keep essential experimental features
-    serverComponentsExternalPackages: ['bcryptjs'],
+    // Remove the deprecated serverComponentsExternalPackages
   },
-  // Add output export configuration
-  output: 'standalone',
 }
 
-export default nextConfig;
+export default nextConfig
