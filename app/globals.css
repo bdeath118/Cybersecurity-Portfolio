@@ -105,4 +105,26 @@
       scroll-behavior: auto;
     }
   }
+
+  /* Background image utilities */
+  .bg-construction {
+    background-image: url("/images/background.jpeg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  /* Ensure background images load properly */
+  .bg-image-fallback {
+    background-color: #1e40af;
+    background-image: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+  }
+}
+
+/* Ensure images are preloaded */
+@media (preload) {
+  .preload-bg {
+    background-image: url("/images/background.jpeg");
+  }
 }

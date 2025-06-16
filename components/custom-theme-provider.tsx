@@ -62,9 +62,9 @@ export function CustomThemeProvider({
       root.style.setProperty("--foreground", siteInfo.theme.textColor)
     }
 
-    // Apply background image if available
-    if (siteInfo?.backgroundImage) {
-      const opacity = siteInfo.backgroundOpacity !== undefined ? siteInfo.backgroundOpacity / 100 : 1
+    // Apply background image if available (but not on under-construction page)
+    if (siteInfo?.backgroundImage && !window.location.pathname.includes("/under-construction")) {
+      const opacity = siteInfo.backgroundOpacity !== undefined ? siteInfo.backgroundOpacity / 100 : 0.8
 
       // Create and apply the background image styles
       const backgroundStyles = document.createElement("style")
@@ -88,6 +88,7 @@ export function CustomThemeProvider({
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
+          background-attachment: fixed;
           opacity: ${opacity};
           z-index: -1;
           pointer-events: none;

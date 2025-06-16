@@ -1,11 +1,8 @@
-import { getEnv } from "./env"
 import { validateUser } from "./data"
 import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
 
 // Generate a session token without using crypto
 function generateSessionToken(): string {
-  // Create a random token using Math.random and current timestamp
   const randomPart = Math.random().toString(36).substring(2, 15)
   const timestampPart = Date.now().toString(36)
   return `${randomPart}${timestampPart}`
@@ -13,10 +10,7 @@ function generateSessionToken(): string {
 
 // Simple hash function that doesn't rely on crypto
 export function hashPassword(password: string): string {
-  // This is a very simple hash function for demonstration purposes
-  // In a production environment, use a proper password hashing library
-  const env = getEnv()
-  const salt = env.AUTH_SECRET
+  const salt = process.env.AUTH_SECRET || "default-salt"
   let hash = 0
   const combinedString = password + salt
 
@@ -26,7 +20,6 @@ export function hashPassword(password: string): string {
     hash = hash & hash // Convert to 32bit integer
   }
 
-  // Convert to hex string
   return (hash >>> 0).toString(16).padStart(8, "0")
 }
 
@@ -34,59 +27,20 @@ export function hashPassword(password: string): string {
 export async function authenticateUser(username: string, password: string) {
   console.log("🔐 Authentication attempt:", { username, passwordLength: password.length })
 
-  // Get environment variables
-  const env = getEnv()
-  console.log("🌍 Environment check:", {
-    hasAdminUsername: !!env.ADMIN_USERNAME,
-    hasAdminPassword: !!env.ADMIN_PASSWORD,
-    adminUsername: env.ADMIN_USERNAME,
-  })
-
-  let isAuthenticated = false
-
-  // PRIORITY 1: Check environment variable credentials if provided
-  if (env.ADMIN_USERNAME && env.ADMIN_PASSWORD) {
-    console.log("🔑 Checking environment credentials...")
-    // Direct comparison with environment variables (no hashing for env vars)
-    isAuthenticated = username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD
-    console.log("✅ Environment auth result:", isAuthenticated)
-
-    if (isAuthenticated) {
-      console.log("🎉 Authentication successful with environment variables!")
-
-      // Create a session token with better security
-      const token = generateSessionToken()
-
-      // Store in a secure, HTTP-only cookie with improved security settings
-      cookies().set("admin-auth", "authenticated", {
-        httpOnly: true,
-        secure: true, // Always use secure cookies
-        maxAge: 60 * 60 * 24, // 1 day
-        path: "/",
-        sameSite: "lax",
-      })
-
-      return { success: true }
-    }
-  }
-
-  // PRIORITY 2: Only check database if environment variables are not set or failed
-  if (!isAuthenticated && (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD)) {
-    console.log("🗄️ Checking database credentials (fallback)...")
+  try {
+    // Use the validateUser function from data layer
     const user = await validateUser(username, password)
-    isAuthenticated = !!user
-    console.log("✅ Database auth result:", isAuthenticated)
 
-    if (isAuthenticated) {
-      console.log("🎉 Authentication successful with database credentials!")
+    if (user) {
+      console.log("🎉 Authentication successful!")
 
       // Create a session token
       const token = generateSessionToken()
 
-      // Store in a secure, HTTP-only cookie with improved security
+      // Store in a secure, HTTP-only cookie
       cookies().set("admin-auth", "authenticated", {
         httpOnly: true,
-        secure: true, // Always use secure cookies
+        secure: process.env.NODE_ENV === "production",
         maxAge: 60 * 60 * 24, // 1 day
         path: "/",
         sameSite: "lax",
@@ -94,41 +48,46 @@ export async function authenticateUser(username: string, password: string) {
 
       return { success: true }
     }
-  }
 
-  console.log("❌ Authentication failed")
-  return { success: false, message: "Invalid username or password" }
+    console.log("❌ Authentication failed")
+    return { success: false, message: "Invalid username or password" }
+  } catch (error) {
+    console.error("Authentication error:", error)
+    return { success: false, message: "Authentication error occurred" }
+  }
 }
 
 // Verify a session
-export async function verifySession() {
-  const authCookie = cookies().get("admin-auth")
+export async function verifySession(): Promise<boolean> {
+  try {
+    const authCookie = cookies().get("admin-auth")
 
-  if (!authCookie || authCookie.value === "") {
+    if (!authCookie || authCookie.value !== "authenticated") {
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Session verification error:", error)
     return false
   }
-
-  // In a real app, verify this token against your database
-  // For now, we'll just check if it exists
-  return true
 }
 
 // Alias for verifySession (for backward compatibility)
-export async function validateSession() {
+export async function validateSession(): Promise<boolean> {
   return verifySession()
 }
 
 // Logout a user
-export async function logoutUser() {
-  cookies().delete("admin-auth")
-  redirect("/admin")
+export async function logoutUser(): Promise<void> {
+  try {
+    cookies().delete("admin-auth")
+  } catch (error) {
+    console.error("Logout error:", error)
+  }
 }
 
 // Middleware to check authentication
-export async function checkAuth() {
-  const isAuthenticated = await verifySession()
-
-  if (!isAuthenticated) {
-    redirect("/admin")
-  }
+export async function checkAuth(): Promise<boolean> {
+  return verifySession()
 }

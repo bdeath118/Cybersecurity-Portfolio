@@ -27,6 +27,7 @@
     "@radix-ui/react-switch": "latest",
     "@radix-ui/react-tabs": "latest",
     "@radix-ui/react-toast": "^1.1.5",
+    "@supabase/supabase-js": "latest",
     "ai": "^3.4.32",
     "axios": "latest",
     "bcryptjs": "^2.4.3",
