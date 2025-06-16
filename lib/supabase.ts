@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
 // Environment variable validation with fallbacks
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
@@ -16,23 +16,59 @@ if (!supabaseAnonKey) {
   throw new Error("Supabase anonymous key is required")
 }
 
-// Client-side Supabase client (for browser)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-})
+// Singleton pattern to prevent multiple instances
+let supabaseInstance: SupabaseClient | null = null
+let supabaseAdminInstance: SupabaseClient | null = null
 
-// Server-side Supabase client (for API routes and server actions)
-export const supabaseAdmin = supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey, {
+// Create singleton client-side Supabase client
+function createSupabaseClient(): SupabaseClient {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: "cybersecurity-portfolio-auth", // Unique storage key
+      },
+      global: {
+        headers: {
+          "X-Client-Info": "cybersecurity-portfolio@1.0.0",
+        },
       },
     })
-  : supabase // Fallback to regular client if service key not available
+
+    console.log("🔗 Supabase client instance created")
+  }
+
+  return supabaseInstance
+}
+
+// Create singleton server-side Supabase client
+function createSupabaseAdminClient(): SupabaseClient {
+  if (!supabaseAdminInstance) {
+    supabaseAdminInstance = supabaseServiceKey
+      ? createClient(supabaseUrl, supabaseServiceKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+          global: {
+            headers: {
+              "X-Client-Info": "cybersecurity-portfolio-admin@1.0.0",
+            },
+          },
+        })
+      : createSupabaseClient() // Fallback to regular client if service key not available
+
+    console.log("🔗 Supabase admin client instance created")
+  }
+
+  return supabaseAdminInstance
+}
+
+// Export singleton instances
+export const supabase = createSupabaseClient()
+export const supabaseAdmin = createSupabaseAdminClient()
 
 // Database types (keeping existing types)
 export interface Database {
@@ -450,4 +486,23 @@ export function isSupabaseConfigured(): boolean {
 // Helper function to check if admin operations are available
 export function isSupabaseAdminAvailable(): boolean {
   return !!(supabaseServiceKey && supabaseUrl && supabaseAnonKey)
+}
+
+// Helper function to get client info
+export function getSupabaseClientInfo() {
+  return {
+    hasClient: !!supabaseInstance,
+    hasAdminClient: !!supabaseAdminInstance,
+    isConfigured: isSupabaseConfigured(),
+    hasServiceKey: !!supabaseServiceKey,
+  }
+}
+
+// Cleanup function for development (optional)
+export function resetSupabaseClients() {
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+    supabaseInstance = null
+    supabaseAdminInstance = null
+    console.log("🔄 Supabase clients reset for development")
+  }
 }

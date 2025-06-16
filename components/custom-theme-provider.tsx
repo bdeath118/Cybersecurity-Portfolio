@@ -5,6 +5,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 import type { SiteInfo } from "@/lib/types"
+import { useSupabase } from "@/hooks/use-supabase"
 
 interface CustomThemeContextType {
   siteInfo: SiteInfo | null
@@ -30,6 +31,7 @@ export function CustomThemeProvider({
 }) {
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const { supabase, isReady } = useSupabase()
 
   useEffect(() => {
     async function fetchSiteInfo() {
