@@ -19,10 +19,8 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
-  // Modern Next.js 15 features
   poweredByHeader: false,
   reactStrictMode: true,
-  // Compiler options for Next.js 15
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
