@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     domains: ['images.credly.com', 'media.licdn.com', 'avatars.githubusercontent.com'],
@@ -15,10 +15,14 @@ const nextConfig = {
       },
     ],
   },
-  serverExternalPackages: ['@supabase/supabase-js'],
+  serverExternalPackages: ['@supabase/supabase-js', 'bcryptjs'],
   experimental: {
-    // Remove the deprecated serverComponentsExternalPackages
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  // Enable modern features
+  swcMinify: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
 }
 
 export default nextConfig
