@@ -33,17 +33,27 @@ function checkMetadataConflicts(dir) {
 }
 
 // Check for conflicts in the app directory
+console.log("🔍 Scanning for metadata conflicts...")
+console.log("📁 Checking app directory...")
+
 const conflicts = checkMetadataConflicts("./app")
 
 if (conflicts.length > 0) {
   console.log("❌ Metadata conflicts found in:")
   conflicts.forEach((file) => console.log(`  - ${file}`))
   console.log('\n🔧 Fix: Remove either "metadata" export or "generateMetadata" function from each file.')
+  console.log("\n📋 Recommended action:")
+  console.log('- Keep "generateMetadata" for dynamic metadata (recommended)')
+  console.log('- Remove "export const metadata" static exports')
 } else {
   console.log("✅ No metadata conflicts found!")
+  console.log("🎉 All files are properly configured for Next.js 15")
 }
 
 console.log("\n📋 Metadata export summary:")
 console.log('- Use "export const metadata = {...}" for static metadata')
 console.log('- Use "export async function generateMetadata() {...}" for dynamic metadata')
 console.log("- Use only one of them in the same file")
+console.log("- Scripts and utility files should not have metadata exports")
+
+console.log("\n🔍 Scan complete!")
