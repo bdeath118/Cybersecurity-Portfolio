@@ -70,7 +70,7 @@ importers:
         version: 2.50.0
       ai:
         specifier: ^3.4.32
-        version: 3.4.32(react@18.0.0)(sswr@2.2.0(svelte@5.34.3))(svelte@5.34.3)(vue@3.5.16(typescript@5.0.2))(zod@3.24.1)
+        version: 3.4.32(react@18.0.0)(sswr@2.2.0(svelte@5.34.5))(svelte@5.34.5)(vue@3.5.16(typescript@5.0.2))(zod@3.24.1)
       axios:
         specifier: latest
         version: 1.10.0
@@ -3039,8 +3039,8 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
-  svelte@5.34.3:
-    resolution: {integrity: sha512-Y0QKP2rfWD+ARKe91c4JgZgc/nXa2BfOnVBUjYUMB819m7VyPszihkjdzXPIV0qlGRZYEukpgNq7hgbzTbopJw==}
+  svelte@5.34.5:
+    resolution: {integrity: sha512-MMqhT/iTdwExPcyBCt+Bqxv7FV+LpSciej/gVgd/Vj7zRF9iPgRWGBxiVAwfzPYAOgwgFigIAQV8VJfhyB08/w==}
     engines: {node: '>=18'}
 
   swr@2.3.3:
@@ -3338,13 +3338,13 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
-  '@ai-sdk/svelte@0.0.57(svelte@5.34.3)(zod@3.24.1)':
+  '@ai-sdk/svelte@0.0.57(svelte@5.34.5)(zod@3.24.1)':
     dependencies:
       '@ai-sdk/provider-utils': 1.0.22(zod@3.24.1)
       '@ai-sdk/ui-utils': 0.0.50(zod@3.24.1)
-      sswr: 2.2.0(svelte@5.34.3)
+      sswr: 2.2.0(svelte@5.34.5)
     optionalDependencies:
-      svelte: 5.34.3
+      svelte: 5.34.5
     transitivePeerDependencies:
       - zod
 
@@ -4554,13 +4554,13 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  ai@3.4.32(react@18.0.0)(sswr@2.2.0(svelte@5.34.3))(svelte@5.34.3)(vue@3.5.16(typescript@5.0.2))(zod@3.24.1):
+  ai@3.4.32(react@18.0.0)(sswr@2.2.0(svelte@5.34.5))(svelte@5.34.5)(vue@3.5.16(typescript@5.0.2))(zod@3.24.1):
     dependencies:
       '@ai-sdk/provider': 0.0.26
       '@ai-sdk/provider-utils': 1.0.22(zod@3.24.1)
       '@ai-sdk/react': 0.0.70(react@18.0.0)(zod@3.24.1)
       '@ai-sdk/solid': 0.0.54(zod@3.24.1)
-      '@ai-sdk/svelte': 0.0.57(svelte@5.34.3)(zod@3.24.1)
+      '@ai-sdk/svelte': 0.0.57(svelte@5.34.5)(zod@3.24.1)
       '@ai-sdk/ui-utils': 0.0.50(zod@3.24.1)
       '@ai-sdk/vue': 0.0.59(vue@3.5.16(typescript@5.0.2))(zod@3.24.1)
       '@opentelemetry/api': 1.9.0
@@ -4571,8 +4571,8 @@ snapshots:
       zod-to-json-schema: 3.24.5(zod@3.24.1)
     optionalDependencies:
       react: 18.0.0
-      sswr: 2.2.0(svelte@5.34.3)
-      svelte: 5.34.3
+      sswr: 2.2.0(svelte@5.34.5)
+      svelte: 5.34.5
       zod: 3.24.1
     transitivePeerDependencies:
       - solid-js
@@ -6250,9 +6250,9 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  sswr@2.2.0(svelte@5.34.3):
+  sswr@2.2.0(svelte@5.34.5):
     dependencies:
-      svelte: 5.34.3
+      svelte: 5.34.5
       swrev: 4.0.0
 
   stable-hash@0.0.5: {}
@@ -6359,7 +6359,7 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svelte@5.34.3:
+  svelte@5.34.5:
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@jridgewell/sourcemap-codec': 1.5.0
