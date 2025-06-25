@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit",
     "clean": "rm -rf .next node_modules package-lock.json",
-    "fresh-install": "npm run clean && npm install"
+    "dev": "next dev",
+    "fresh-install": "npm run clean && npm install",
+    "lint": "next lint",
+    "start": "next start",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.66",
