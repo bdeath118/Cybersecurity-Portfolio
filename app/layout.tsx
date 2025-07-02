@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export async function generateMetadata() {
   try {
-    const siteInfo = await getSiteInfo()
+    const siteInfo = await getSiteInfo();
 
     return {
       title: siteInfo.name ? `${siteInfo.name} | Cyber Security Portfolio` : "Cyber Security Portfolio",
