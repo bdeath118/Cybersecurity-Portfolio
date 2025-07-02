@@ -44,7 +44,8 @@ export async function generateMetadata() {
       },
     }
   } catch (error) {
-    console.error("Error generating metadata:", error)
+    console.error("Error generating metadata:", error);
+
     return {
       title: "Cyber Security Portfolio",
       description: "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
