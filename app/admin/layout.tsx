@@ -1,4 +1,3 @@
-import AdminLayoutClient from "./AdminLayoutClient"
 import type React from "react"
 
 export async function generateMetadata() {
@@ -17,5 +16,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <AdminLayoutClient>{children}</AdminLayoutClient>
+  return <div className="min-h-screen bg-background">{children}</div>
 }

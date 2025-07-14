@@ -1,4 +1,4 @@
-import type React from "react";
+import type React from "react"
 
 export async function generateMetadata() {
   return {
@@ -8,13 +8,13 @@ export async function generateMetadata() {
       index: false,
       follow: false,
     },
-  };
+  }
 }
 
 export default function AdminDashboardLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  return <div className="min-h-screen bg-background">{children}</div>;
+  return <div className="min-h-screen bg-background">{children}</div>
 }

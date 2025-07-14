@@ -6,19 +6,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { username, password } = body
 
-    console.log("=== LOGIN API DEBUG ===")
-    console.log("Received username:", username)
-    console.log("Received password length:", password?.length)
-
-    // Log all environment variables for debugging
-    console.log("Environment variables:")
-    console.log("- NODE_ENV:", process.env.NODE_ENV)
-    console.log("- ADMIN_USERNAME:", process.env.ADMIN_USERNAME)
-    console.log("- ADMIN_PASSWORD exists:", !!process.env.ADMIN_PASSWORD)
-    console.log("- ADMIN_PASSWORD length:", process.env.ADMIN_PASSWORD?.length)
+    console.log("Login API called with username:", username)
+    console.log("Environment variables check:")
+    console.log("- ADMIN_USERNAME:", process.env.ADMIN_USERNAME || "not set")
+    console.log("- ADMIN_PASSWORD:", process.env.ADMIN_PASSWORD ? "set" : "not set")
 
     if (!username || !password) {
-      console.log("Missing username or password")
       return NextResponse.json(
         {
           success: false,
@@ -28,36 +21,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get admin credentials from environment
+    // Use the provided environment variables
     const adminUsername = process.env.ADMIN_USERNAME
     const adminPassword = process.env.ADMIN_PASSWORD
 
-    console.log("Credential check:")
-    console.log("- Admin username from env:", adminUsername)
-    console.log("- Admin password from env exists:", !!adminPassword)
+    console.log("Credential comparison:")
+    console.log("- Expected username:", adminUsername)
+    console.log("- Provided username:", username)
     console.log("- Username match:", username === adminUsername)
     console.log("- Password match:", password === adminPassword)
 
-    // If no environment variables, use hardcoded defaults for development
-    const fallbackUsername = "admin"
-    const fallbackPassword = "admin123"
-
-    let isValidLogin = false
-
-    if (adminUsername && adminPassword) {
-      // Use environment variables if available
-      isValidLogin = username === adminUsername && password === adminPassword
-      console.log("Using environment credentials")
-    } else {
-      // Use fallback credentials
-      isValidLogin = username === fallbackUsername && password === fallbackPassword
-      console.log("Using fallback credentials (admin/admin123)")
+    // Check if environment variables are set
+    if (!adminUsername || !adminPassword) {
+      console.log("Environment variables not properly set, using fallback")
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Admin credentials not configured. Please check environment variables.",
+        },
+        { status: 500 },
+      )
     }
 
-    console.log("Login valid:", isValidLogin)
-
-    if (isValidLogin) {
-      console.log("Authentication successful - setting cookie")
+    if (username === adminUsername && password === adminPassword) {
+      console.log("Authentication successful")
 
       // Set the authentication cookie
       cookies().set("admin-auth", "authenticated", {
@@ -71,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
-    console.log("Authentication failed")
+    console.log("Authentication failed - credentials don't match")
     return NextResponse.json(
       {
         success: false,

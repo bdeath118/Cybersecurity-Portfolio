@@ -95,20 +95,12 @@ export function CustomThemeProvider({
       }
     }
 
-    // COMPLETELY SKIP background image application on admin pages
-    const isAdminPage = typeof window !== "undefined" && window.location.pathname.includes("/admin")
-
-    if (isAdminPage) {
-      // Remove any existing background styles on admin pages
-      const existingStyles = document.getElementById("custom-background-styles")
-      if (existingStyles) {
-        existingStyles.remove()
-      }
-      return // Exit early for admin pages
-    }
-
     // Apply background image ONLY on non-admin pages
-    if (siteInfo?.backgroundImage) {
+    const isAdminPage =
+      typeof window !== "undefined" &&
+      (window.location.pathname.startsWith("/admin") || window.location.pathname.includes("/admin"))
+
+    if (siteInfo?.backgroundImage && !isAdminPage) {
       const opacity = siteInfo.backgroundOpacity !== undefined ? siteInfo.backgroundOpacity / 100 : 0.8
 
       // Create and apply the background image styles
@@ -150,6 +142,12 @@ export function CustomThemeProvider({
         }
       } catch (error) {
         console.warn("Invalid background image URL:", siteInfo.backgroundImage)
+      }
+    } else if (isAdminPage) {
+      // Remove background styles on admin pages
+      const existingStyles = document.getElementById("custom-background-styles")
+      if (existingStyles) {
+        existingStyles.remove()
       }
     }
   }, [siteInfo])
