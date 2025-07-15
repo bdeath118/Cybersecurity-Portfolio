@@ -1,77 +1,59 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { username, password } = body
+    const { username, password } = await request.json()
 
-    console.log("Login API called with username:", username)
-    console.log("Environment variables check:")
-    console.log("- ADMIN_USERNAME:", process.env.ADMIN_USERNAME || "not set")
-    console.log("- ADMIN_PASSWORD:", process.env.ADMIN_PASSWORD ? "set" : "not set")
+    console.log("=== LOGIN API DEBUG ===")
+    console.log("Received login attempt for username:", username)
 
-    if (!username || !password) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Username and password are required",
-        },
-        { status: 400 },
-      )
-    }
-
-    // Use the provided environment variables
+    // Get environment variables
     const adminUsername = process.env.ADMIN_USERNAME
     const adminPassword = process.env.ADMIN_PASSWORD
 
-    console.log("Credential comparison:")
-    console.log("- Expected username:", adminUsername)
-    console.log("- Provided username:", username)
-    console.log("- Username match:", username === adminUsername)
-    console.log("- Password match:", password === adminPassword)
+    console.log("Environment variables:")
+    console.log("- ADMIN_USERNAME:", adminUsername || "NOT SET")
+    console.log("- ADMIN_PASSWORD exists:", !!adminPassword)
 
-    // Check if environment variables are set
-    if (!adminUsername || !adminPassword) {
-      console.log("Environment variables not properly set, using fallback")
+    // Check credentials
+    let isValid = false
+
+    if (adminUsername && adminPassword) {
+      console.log("Using environment credentials")
+      isValid = username === adminUsername && password === adminPassword
+      console.log("Username match:", username === adminUsername)
+      console.log("Password match:", password === adminPassword)
+    } else {
+      console.log("Environment variables not set, using fallback")
+      isValid = username === "admin" && password === "admin123"
+      console.log("Using fallback credentials: admin/admin123")
+      console.log("Username match:", username === "admin")
+      console.log("Password match:", password === "admin123")
+    }
+
+    console.log("Login valid:", isValid)
+    console.log("=== END LOGIN DEBUG ===")
+
+    if (isValid) {
+      return NextResponse.json({
+        success: true,
+        message: "Login successful",
+      })
+    } else {
       return NextResponse.json(
         {
           success: false,
-          error: "Admin credentials not configured. Please check environment variables.",
+          error: "Invalid username or password",
         },
-        { status: 500 },
+        { status: 401 },
       )
     }
-
-    if (username === adminUsername && password === adminPassword) {
-      console.log("Authentication successful")
-
-      // Set the authentication cookie
-      cookies().set("admin-auth", "authenticated", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24, // 1 day
-        path: "/",
-        sameSite: "lax",
-      })
-
-      return NextResponse.json({ success: true })
-    }
-
-    console.log("Authentication failed - credentials don't match")
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Invalid username or password",
-      },
-      { status: 401 },
-    )
   } catch (error) {
     console.error("Login API error:", error)
     return NextResponse.json(
       {
         success: false,
-        error: "An error occurred during login",
+        error: "Internal server error",
       },
       { status: 500 },
     )

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { getEnv } from "@/lib/env"
-import { hashPassword } from "@/lib/auth"
 
 export async function GET() {
   try {
@@ -9,20 +8,13 @@ export async function GET() {
     // Debug information (don't expose passwords in production)
     const debugInfo = {
       environment: process.env.NODE_ENV,
-      hasAuthSecret: !!env.AUTH_SECRET,
-      authSecretLength: env.AUTH_SECRET?.length || 0,
-      hasAdminUsername: !!env.ADMIN_USERNAME,
       adminUsername: env.ADMIN_USERNAME || "NOT_SET",
-      hasAdminPassword: !!env.ADMIN_PASSWORD,
-      adminPasswordLength: env.ADMIN_PASSWORD?.length || 0,
-
-      // Test default credentials
-      defaultUsernameHash: "admin",
-      defaultPasswordHash: hashPassword("admin123"),
-
-      // Environment variable hashes (if set)
-      envUsernameHash: env.ADMIN_USERNAME || "NOT_SET",
-      envPasswordHash: env.ADMIN_PASSWORD ? hashPassword(env.ADMIN_PASSWORD) : "NOT_SET",
+      adminPasswordExists: !!env.ADMIN_PASSWORD,
+      fallbackCredentials: {
+        username: "admin",
+        password: "admin123",
+      },
+      note: "This endpoint shows current authentication configuration",
     }
 
     return NextResponse.json({

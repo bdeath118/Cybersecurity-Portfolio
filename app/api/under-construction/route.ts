@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getUnderConstructionSettings, updateUnderConstructionSettings } from "@/lib/data"
 import { cookies } from "next/headers"
 
@@ -8,14 +8,23 @@ export async function GET() {
     return NextResponse.json(settings)
   } catch (error) {
     console.error("Error fetching under construction settings:", error)
-    return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
+    return NextResponse.json(
+      {
+        enabled: false,
+        message: "Site under construction",
+        error: "Failed to fetch settings",
+      },
+      { status: 500 },
+    )
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     // Check authentication
-    const authCookie = cookies().get("admin-auth")
+    const cookieStore = cookies()
+    const authCookie = cookieStore.get("admin-auth")
+
     if (!authCookie || authCookie.value !== "authenticated") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

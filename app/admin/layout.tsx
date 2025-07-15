@@ -1,14 +1,10 @@
 import type React from "react"
+import type { Metadata } from "next"
+import AdminLayoutClient from "./AdminLayoutClient"
 
-export async function generateMetadata() {
-  return {
-    title: "Admin Dashboard | Cyber Security Portfolio",
-    description: "Admin dashboard for managing portfolio content",
-    robots: {
-      index: false,
-      follow: false,
-    },
-  }
+export const metadata: Metadata = {
+  title: "Admin Dashboard",
+  description: "Cybersecurity Portfolio Admin Dashboard",
 }
 
 export default function AdminLayout({
@@ -16,5 +12,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <div className="min-h-screen bg-background">{children}</div>
+  return <AdminLayoutClient>{children}</AdminLayoutClient>
 }

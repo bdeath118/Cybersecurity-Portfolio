@@ -8,27 +8,19 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching site info:", error)
 
-    // Return default site info if there's an error
-    const defaultSiteInfo = {
-      name: "John Doe",
-      title: "Cybersecurity Professional",
-      description:
-        "Passionate cybersecurity professional specializing in penetration testing, incident response, and security architecture.",
-      email: "john.doe@example.com",
-      github: "https://github.com/johndoe",
-      linkedin: "https://linkedin.com/in/johndoe",
-      twitter: "https://twitter.com/johndoe",
+    // Return fallback data
+    return NextResponse.json({
+      name: "Cybersecurity Professional",
+      title: "Cybersecurity Portfolio",
+      description: "Professional cybersecurity portfolio",
+      email: "contact@example.com",
       theme: {
-        primaryColor: "#3b82f6",
-        secondaryColor: "#1e40af",
-        backgroundColor: "#ffffff",
-        textColor: "#1f2937",
+        primary: "#3b82f6",
+        secondary: "#1e40af",
+        accent: "#06b6d4",
       },
-      icon: "/images/avatar-photo.jpg",
-      backgroundImage: "/images/background.jpeg",
-      backgroundOpacity: 80,
-    }
-
-    return NextResponse.json(defaultSiteInfo)
+      background_image: "/images/background.jpeg",
+      background_opacity: 0.7,
+    })
   }
 }

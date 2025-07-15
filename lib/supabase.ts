@@ -1,124 +1,99 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import { createClient } from "@supabase/supabase-js"
 
-// Your actual working Supabase credentials
-const WORKING_SUPABASE_URL = "https://icustcymiynpwjfoogtc.supabase.co"
-const WORKING_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljdXN0Y3ltaXlucHdqZm9vZ3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzMzU4NjUsImV4cCI6MjA2NDkxMTg2NX0.HmHQMgGafnULLbUlygCXeAtFDV4S-FhTXyuZBPrXClI"
-const WORKING_SUPABASE_SERVICE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljdXN0Y3ltaXlucHdqZm9vZ3RjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTMzNTg2NSwiZXhwIjoyMDY0OTExODY1fQ.F6BdeGINMlqD2VoEvhl80tuKrAWEVzGUCSHWt-XOuIc"
+// Environment variables with validation
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Function to check if environment variable is a placeholder
-function isPlaceholder(value: string | undefined): boolean {
-  if (!value) return true
-  if (value.includes("your_supabase_project_url_here")) return true
-  if (value.includes("placeholder")) return true
-  if (value.includes("your_")) return true
-  if (value.length < 10) return true
-  return false
-}
+// Validate Supabase configuration
+export function isSupabaseConfigured(): boolean {
+  const hasValidUrl =
+    supabaseUrl &&
+    supabaseUrl !== "your_supabase_project_url_here" &&
+    supabaseUrl.startsWith("https://") &&
+    supabaseUrl.includes(".supabase.co")
 
-// Get environment variables
-const envSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const envSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
-const envSupabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const hasValidKey =
+    supabaseAnonKey && supabaseAnonKey !== "your_supabase_anon_key_here" && supabaseAnonKey.length > 50
 
-// Use working credentials if environment variables are placeholders
-const finalSupabaseUrl = isPlaceholder(envSupabaseUrl) ? WORKING_SUPABASE_URL : envSupabaseUrl!
-const finalSupabaseAnonKey = isPlaceholder(envSupabaseAnonKey) ? WORKING_SUPABASE_ANON_KEY : envSupabaseAnonKey!
-const finalSupabaseServiceKey = isPlaceholder(envSupabaseServiceKey)
-  ? WORKING_SUPABASE_SERVICE_KEY
-  : envSupabaseServiceKey!
+  const isConfigured = Boolean(hasValidUrl && hasValidKey)
 
-console.log("🔧 Supabase Configuration:")
-console.log("- URL:", finalSupabaseUrl.substring(0, 30) + "...")
-console.log("- Using working credentials:", isPlaceholder(envSupabaseUrl) ? "YES" : "NO")
-
-// Singleton pattern to prevent multiple instances
-let supabaseInstance: SupabaseClient | null = null
-let supabaseAdminInstance: SupabaseClient | null = null
-
-// Create singleton client-side Supabase client
-function createSupabaseClient(): SupabaseClient {
-  if (!supabaseInstance) {
-    try {
-      supabaseInstance = createClient(finalSupabaseUrl, finalSupabaseAnonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          storageKey: "cybersecurity-portfolio-auth",
-        },
-        global: {
-          headers: {
-            "X-Client-Info": "cybersecurity-portfolio@1.0.0",
-          },
-        },
-      })
-
-      console.log("✅ Supabase client created successfully")
-    } catch (error) {
-      console.error("❌ Failed to create Supabase client:", error)
-      throw error
-    }
+  if (!isConfigured) {
+    console.warn("⚠️ Supabase not properly configured:")
+    console.warn("   - URL valid:", Boolean(hasValidUrl))
+    console.warn("   - Key valid:", Boolean(hasValidKey))
+    console.warn("   - Current URL:", supabaseUrl?.substring(0, 30) + "...")
   }
 
-  return supabaseInstance
+  return isConfigured
 }
 
-// Create singleton server-side Supabase client
-function createSupabaseAdminClient(): SupabaseClient {
-  if (!supabaseAdminInstance) {
-    try {
-      supabaseAdminInstance = createClient(finalSupabaseUrl, finalSupabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-        global: {
-          headers: {
-            "X-Client-Info": "cybersecurity-portfolio-admin@1.0.0",
-          },
-        },
-      })
+// Create Supabase client with validation
+function createSupabaseClient() {
+  if (!isSupabaseConfigured()) {
+    console.warn("⚠️ Creating mock Supabase client - database operations will fail gracefully")
 
-      console.log("✅ Supabase admin client created successfully")
-    } catch (error) {
-      console.error("❌ Failed to create Supabase admin client:", error)
-      // Fallback to regular client
-      supabaseAdminInstance = createSupabaseClient()
-    }
+    // Return a mock client that prevents errors
+    return {
+      from: () => ({
+        select: () => ({ data: null, error: new Error("Supabase not configured") }),
+        insert: () => ({ data: null, error: new Error("Supabase not configured") }),
+        update: () => ({ data: null, error: new Error("Supabase not configured") }),
+        delete: () => ({ data: null, error: new Error("Supabase not configured") }),
+        eq: () => ({ data: null, error: new Error("Supabase not configured") }),
+        single: () => ({ data: null, error: new Error("Supabase not configured") }),
+        order: () => ({ data: null, error: new Error("Supabase not configured") }),
+        limit: () => ({ data: null, error: new Error("Supabase not configured") }),
+      }),
+      auth: {
+        signIn: () => ({ data: null, error: new Error("Supabase not configured") }),
+        signOut: () => ({ data: null, error: new Error("Supabase not configured") }),
+        getUser: () => ({ data: null, error: new Error("Supabase not configured") }),
+      },
+    } as any
   }
 
-  return supabaseAdminInstance
+  try {
+    return createClient(supabaseUrl!, supabaseAnonKey!)
+  } catch (error) {
+    console.error("❌ Failed to create Supabase client:", error)
+    throw error
+  }
 }
 
-// Export singleton instances
+// Create admin client with service role key
+function createSupabaseAdminClient() {
+  if (!isSupabaseConfigured() || !supabaseServiceKey) {
+    console.warn("⚠️ Creating mock Supabase admin client")
+    return createSupabaseClient() // Return regular client as fallback
+  }
+
+  try {
+    return createClient(supabaseUrl!, supabaseServiceKey)
+  } catch (error) {
+    console.error("❌ Failed to create Supabase admin client:", error)
+    return createSupabaseClient() // Fallback to regular client
+  }
+}
+
+// Export clients
 export const supabase = createSupabaseClient()
 export const supabaseAdmin = createSupabaseAdminClient()
 
-// Helper function to check if Supabase is properly configured
-export function isSupabaseConfigured(): boolean {
-  return !!(finalSupabaseUrl && finalSupabaseAnonKey)
-}
+// Export configuration status
+export const SUPABASE_CONFIGURED = isSupabaseConfigured()
 
-// Helper function to check if admin operations are available
-export function isSupabaseAdminAvailable(): boolean {
-  return !!(finalSupabaseServiceKey && finalSupabaseUrl && finalSupabaseAnonKey)
-}
-
-// Helper function to get client info
-export function getSupabaseClientInfo() {
-  return {
-    hasClient: !!supabaseInstance,
-    hasAdminClient: !!supabaseAdminInstance,
-    isConfigured: isSupabaseConfigured(),
-    hasServiceKey: !!finalSupabaseServiceKey,
-    url: finalSupabaseUrl,
-    usingWorkingCredentials: isPlaceholder(envSupabaseUrl),
+// Log configuration status
+if (typeof window === "undefined") {
+  // Only log on server side
+  if (SUPABASE_CONFIGURED) {
+    console.log("✅ Supabase configured successfully")
+  } else {
+    console.log("⚠️ Supabase not configured - using fallback data")
   }
 }
 
-// Database types (keeping existing types)
+// Database types
 export interface Database {
   public: {
     Tables: {

@@ -1,117 +1,106 @@
-import type React from "react";
-import "@/app/globals.css";
-import { Inter } from "next/font/google";
-import { CustomThemeProvider } from "@/components/custom-theme-provider";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { getSiteInfo } from "@/lib/data";
+import type React from "react"
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { CustomThemeProvider } from "@/components/custom-theme-provider"
+import { Toaster } from "@/components/ui/toaster"
+import { getSiteInfo } from "@/lib/data"
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] })
 
-export async function generateMetadata() {
+export async function generateMetadata(): Promise<Metadata> {
   try {
-    const siteInfo = await getSiteInfo();
+    const siteInfo = await getSiteInfo()
 
     return {
-      title: siteInfo.name
-        ? `${siteInfo.name} | Cyber Security Portfolio`
-        : "Cyber Security Portfolio",
+      title: {
+        default: siteInfo.title || "Cybersecurity Portfolio",
+        template: `%s | ${siteInfo.name || "Cybersecurity Professional"}`,
+      },
       description:
-        siteInfo.description ||
-        "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
-      generator: "Next.js",
-      icons: {
-        icon: siteInfo.icon || "/favicon.ico",
+        siteInfo.description || "Professional cybersecurity portfolio showcasing skills, projects, and achievements",
+      keywords: [
+        "cybersecurity",
+        "ethical hacking",
+        "penetration testing",
+        "security consultant",
+        "vulnerability assessment",
+        "network security",
+        "web application security",
+        siteInfo.name || "cybersecurity professional",
+      ],
+      authors: [{ name: siteInfo.name || "Cybersecurity Professional" }],
+      creator: siteInfo.name || "Cybersecurity Professional",
+      publisher: siteInfo.name || "Cybersecurity Professional",
+      metadataBase: new URL(siteInfo.site_url || process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000"),
+      alternates: {
+        canonical: "/",
       },
       openGraph: {
-        title: siteInfo.name
-          ? `${siteInfo.name} | Cyber Security Portfolio`
-          : "Cyber Security Portfolio",
-        description:
-          siteInfo.description ||
-          "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
         type: "website",
-        images: [
-          {
-            url: siteInfo.backgroundImage || "/images/background.jpeg",
-            width: 1200,
-            height: 630,
-            alt: "Cybersecurity Portfolio",
-          },
-        ],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: siteInfo.name
-          ? `${siteInfo.name} | Cyber Security Portfolio`
-          : "Cyber Security Portfolio",
-        description:
-          siteInfo.description ||
-          "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
-        images: [
-          siteInfo.backgroundImage || "/images/background.jpeg",
-        ],
-      },
-    };
-  } catch (error) {
-    console.error("Error generating metadata:", error);
-
-    return {
-      title: "Cyber Security Portfolio",
-      description:
-        "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
-      generator: "Next.js",
-      icons: {
-        icon: "/favicon.ico",
-      },
-      openGraph: {
-        title: "Cyber Security Portfolio",
-        description:
-          "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
-        type: "website",
+        locale: "en_US",
+        url: "/",
+        title: siteInfo.title || "Cybersecurity Portfolio",
+        description: siteInfo.description || "Professional cybersecurity portfolio",
+        siteName: siteInfo.name || "Cybersecurity Professional",
         images: [
           {
             url: "/images/background.jpeg",
             width: 1200,
             height: 630,
-            alt: "Cybersecurity Portfolio",
+            alt: `${siteInfo.name || "Cybersecurity Professional"} - Portfolio`,
           },
         ],
       },
       twitter: {
         card: "summary_large_image",
-        title: "Cyber Security Portfolio",
-        description:
-          "A portfolio showcasing cybersecurity projects, skills, certifications, and CTF events",
+        title: siteInfo.title || "Cybersecurity Portfolio",
+        description: siteInfo.description || "Professional cybersecurity portfolio",
         images: ["/images/background.jpeg"],
+        creator: siteInfo.twitter ? `@${siteInfo.twitter.split("/").pop()}` : undefined,
       },
-    };
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-video-preview": -1,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
+      },
+      verification: {
+        google: process.env.GOOGLE_SITE_VERIFICATION,
+      },
+    }
+  } catch (error) {
+    console.error("Error generating metadata:", error)
+
+    // Fallback metadata
+    return {
+      title: "Cybersecurity Portfolio",
+      description: "Professional cybersecurity portfolio showcasing skills, projects, and achievements",
+      keywords: ["cybersecurity", "ethical hacking", "penetration testing", "security"],
+    }
   }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <CustomThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <div className="relative flex min-h-screen flex-col">
-            <SiteHeader />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-          </div>
+        <CustomThemeProvider defaultTheme="system" enableSystem attribute="class" storageKey="theme">
+          {children}
+          <Toaster />
         </CustomThemeProvider>
       </body>
     </html>
-  );
+  )
 }
 
 export const metadata = {

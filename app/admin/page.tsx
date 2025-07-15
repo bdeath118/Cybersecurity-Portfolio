@@ -1,14 +1,13 @@
+import type { Metadata } from "next"
 import AdminLoginPageClient from "./AdminLoginPageClient"
 
-export async function generateMetadata() {
-  return {
-    title: "Admin Login | Cyber Security Portfolio",
-    description: "Admin login page",
-    robots: {
-      index: false,
-      follow: false,
-    },
-  }
+export const metadata: Metadata = {
+  title: "Admin Login",
+  description: "Admin login page",
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default function AdminLoginPage() {

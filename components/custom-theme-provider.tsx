@@ -2,66 +2,108 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
-import type { SiteInfo } from "@/lib/types"
+
+interface SiteInfo {
+  name?: string
+  title?: string
+  description?: string
+  email?: string
+  theme?: {
+    primary?: string
+    secondary?: string
+    accent?: string
+    background?: string
+    foreground?: string
+  }
+  background_image?: string
+  background_opacity?: number
+}
 
 interface CustomThemeContextType {
   siteInfo: SiteInfo | null
   loading: boolean
+  error: string | null
 }
 
 const CustomThemeContext = createContext<CustomThemeContextType>({
   siteInfo: null,
   loading: true,
+  error: null,
 })
 
 export function useCustomTheme() {
   return useContext(CustomThemeContext)
 }
 
+interface CustomThemeProviderProps {
+  children: React.ReactNode
+  defaultTheme?: string
+  enableSystem?: boolean
+  attribute?: string
+  value?: any
+  storageKey?: string
+  forcedTheme?: string
+  disableTransitionOnChange?: boolean
+}
+
 export function CustomThemeProvider({
   children,
   defaultTheme = "system",
+  enableSystem = true,
+  attribute = "class",
+  storageKey = "theme",
+  disableTransitionOnChange = false,
   ...props
-}: {
-  children: React.ReactNode
-  defaultTheme?: string
-}) {
+}: CustomThemeProviderProps) {
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const pathname = usePathname()
+
+  // Check if we're on an admin page
+  const isAdminPage = pathname?.startsWith("/admin") || false
 
   useEffect(() => {
     async function fetchSiteInfo() {
       try {
+        setLoading(true)
+        setError(null)
+
         const response = await fetch("/api/site-info", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
+          cache: "no-store",
         })
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          throw new Error(`Failed to fetch site info: ${response.status}`)
         }
 
         const data = await response.json()
         setSiteInfo(data)
-      } catch (error) {
-        console.error("Error fetching site info:", error)
+      } catch (err) {
+        console.error("Error fetching site info:", err)
+        setError(err instanceof Error ? err.message : "Unknown error")
+
         // Use fallback site info
         setSiteInfo({
-          id: "fallback",
           name: "Cybersecurity Professional",
-          title: "Cybersecurity Specialist",
-          description: "Passionate about cybersecurity and ethical hacking.",
+          title: "Cybersecurity Portfolio",
+          description: "Professional cybersecurity portfolio",
           email: "contact@example.com",
-          backgroundOpacity: 0.7,
           theme: {
-            primaryColor: "#3b82f6",
-            secondaryColor: "#1e40af",
-            backgroundColor: "#ffffff",
-            textColor: "#000000",
+            primary: "#3b82f6",
+            secondary: "#1e40af",
+            accent: "#06b6d4",
+            background: "#ffffff",
+            foreground: "#1f2937",
           },
+          background_image: "/images/background.jpeg",
+          background_opacity: 0.7,
         })
       } finally {
         setLoading(false)
@@ -72,89 +114,128 @@ export function CustomThemeProvider({
   }, [])
 
   useEffect(() => {
-    if (siteInfo?.theme) {
-      // Apply custom theme colors to CSS variables
-      const root = document.documentElement
+    if (!siteInfo || isAdminPage) return
 
-      if (siteInfo.theme.primaryColor) {
-        root.style.setProperty("--primary", siteInfo.theme.primaryColor)
-        root.style.setProperty("--primary-foreground", getContrastColor(siteInfo.theme.primaryColor))
+    // Apply custom theme colors to CSS variables
+    const root = document.documentElement
+
+    if (siteInfo.theme) {
+      if (siteInfo.theme.primary) {
+        root.style.setProperty("--primary", siteInfo.theme.primary)
+        root.style.setProperty("--primary-foreground", getContrastColor(siteInfo.theme.primary))
       }
 
-      if (siteInfo.theme.secondaryColor) {
-        root.style.setProperty("--secondary", siteInfo.theme.secondaryColor)
-        root.style.setProperty("--secondary-foreground", getContrastColor(siteInfo.theme.secondaryColor))
+      if (siteInfo.theme.secondary) {
+        root.style.setProperty("--secondary", siteInfo.theme.secondary)
+        root.style.setProperty("--secondary-foreground", getContrastColor(siteInfo.theme.secondary))
       }
 
-      if (siteInfo.theme.backgroundColor) {
-        root.style.setProperty("--background", siteInfo.theme.backgroundColor)
+      if (siteInfo.theme.accent) {
+        root.style.setProperty("--accent", siteInfo.theme.accent)
+        root.style.setProperty("--accent-foreground", getContrastColor(siteInfo.theme.accent))
       }
 
-      if (siteInfo.theme.textColor) {
-        root.style.setProperty("--foreground", siteInfo.theme.textColor)
+      if (siteInfo.theme.background) {
+        root.style.setProperty("--background", siteInfo.theme.background)
+      }
+
+      if (siteInfo.theme.foreground) {
+        root.style.setProperty("--foreground", siteInfo.theme.foreground)
       }
     }
+  }, [siteInfo, isAdminPage])
 
-    // Apply background image ONLY on non-admin pages
-    const isAdminPage =
-      typeof window !== "undefined" &&
-      (window.location.pathname.startsWith("/admin") || window.location.pathname.includes("/admin"))
-
-    if (siteInfo?.backgroundImage && !isAdminPage) {
-      const opacity = siteInfo.backgroundOpacity !== undefined ? siteInfo.backgroundOpacity / 100 : 0.8
-
-      // Create and apply the background image styles
-      const backgroundStyles = document.createElement("style")
-      backgroundStyles.id = "custom-background-styles"
-
-      // Remove any existing background styles
-      const existingStyles = document.getElementById("custom-background-styles")
-      if (existingStyles) {
-        existingStyles.remove()
+  useEffect(() => {
+    // Skip background application for admin pages
+    if (isAdminPage) {
+      // Remove any existing background styles for admin pages
+      const existingStyle = document.getElementById("custom-background-style")
+      if (existingStyle) {
+        existingStyle.remove()
       }
+      return
+    }
 
-      // Only apply background if the image URL is valid and not a blob URL
-      try {
-        if (!siteInfo.backgroundImage.startsWith("blob:")) {
-          const imageUrl = siteInfo.backgroundImage.startsWith("http")
-            ? siteInfo.backgroundImage
-            : new URL(siteInfo.backgroundImage, window.location.origin).href
+    // Apply background image for non-admin pages
+    if (siteInfo?.background_image) {
+      // Validate URL to prevent errors
+      const isValidUrl = (url: string) => {
+        try {
+          // Skip blob URLs and placeholder URLs
+          if (url.includes("blob:") || url.includes("placeholder") || url.includes("your_")) {
+            return false
+          }
 
-          backgroundStyles.innerHTML = `
-            body::before {
-              content: '';
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-image: url('${imageUrl}');
-              background-size: cover;
-              background-position: center;
-              background-repeat: no-repeat;
-              background-attachment: fixed;
-              opacity: ${opacity};
-              z-index: -1;
-              pointer-events: none;
-            }
-          `
-          document.head.appendChild(backgroundStyles)
+          // Check if it's a valid URL or relative path
+          if (url.startsWith("http") || url.startsWith("/")) {
+            return true
+          }
+
+          return false
+        } catch {
+          return false
         }
-      } catch (error) {
-        console.warn("Invalid background image URL:", siteInfo.backgroundImage)
       }
-    } else if (isAdminPage) {
-      // Remove background styles on admin pages
-      const existingStyles = document.getElementById("custom-background-styles")
-      if (existingStyles) {
-        existingStyles.remove()
+
+      if (isValidUrl(siteInfo.background_image)) {
+        const opacity = siteInfo.background_opacity !== undefined ? siteInfo.background_opacity : 0.7
+
+        // Create or update style element
+        let styleElement = document.getElementById("custom-background-style")
+        if (!styleElement) {
+          styleElement = document.createElement("style")
+          styleElement.id = "custom-background-style"
+          document.head.appendChild(styleElement)
+        }
+
+        styleElement.textContent = `
+          body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('${siteInfo.background_image}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            opacity: ${opacity};
+            z-index: -1;
+            pointer-events: none;
+          }
+        `
       }
     }
-  }, [siteInfo])
+
+    // Cleanup function
+    return () => {
+      if (isAdminPage) {
+        const styleElement = document.getElementById("custom-background-style")
+        if (styleElement) {
+          styleElement.remove()
+        }
+      }
+    }
+  }, [siteInfo, isAdminPage])
+
+  const contextValue: CustomThemeContextType = {
+    siteInfo,
+    loading,
+    error,
+  }
 
   return (
-    <CustomThemeContext.Provider value={{ siteInfo, loading }}>
-      <NextThemesProvider defaultTheme={defaultTheme} enableSystem {...props}>
+    <CustomThemeContext.Provider value={contextValue}>
+      <NextThemesProvider
+        defaultTheme={defaultTheme}
+        enableSystem={enableSystem}
+        attribute={attribute}
+        storageKey={storageKey}
+        disableTransitionOnChange={disableTransitionOnChange}
+        {...props}
+      >
         {children}
       </NextThemesProvider>
     </CustomThemeContext.Provider>
@@ -164,12 +245,12 @@ export function CustomThemeProvider({
 // Helper function to determine contrasting text color
 function getContrastColor(hexColor: string): string {
   // Remove the hash if it exists
-  hexColor = hexColor.replace("#", "")
+  const color = hexColor.replace("#", "")
 
   // Parse the color
-  const r = Number.parseInt(hexColor.substr(0, 2), 16)
-  const g = Number.parseInt(hexColor.substr(2, 2), 16)
-  const b = Number.parseInt(hexColor.substr(4, 2), 16)
+  const r = Number.parseInt(color.substr(0, 2), 16)
+  const g = Number.parseInt(color.substr(2, 2), 16)
+  const b = Number.parseInt(color.substr(4, 2), 16)
 
   // Calculate luminance
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
@@ -177,3 +258,6 @@ function getContrastColor(hexColor: string): string {
   // Return black or white based on luminance
   return luminance > 0.5 ? "#000000" : "#ffffff"
 }
+
+// Export the provider as default for backward compatibility
+export default CustomThemeProvider
