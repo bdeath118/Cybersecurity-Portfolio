@@ -46,6 +46,18 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+function HeroSkeleton() {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center">
+      <div className="animate-pulse text-center space-y-4">
+        <div className="h-12 bg-muted rounded w-96 mx-auto"></div>
+        <div className="h-6 bg-muted rounded w-64 mx-auto"></div>
+        <div className="h-4 bg-muted rounded w-80 mx-auto"></div>
+      </div>
+    </section>
+  )
+}
+
 function LoadingSection({ className }: { className?: string }) {
   return (
     <div className={`flex items-center justify-center py-12 ${className}`}>
@@ -58,7 +70,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <Suspense fallback={<LoadingSection className="min-h-[60vh]" />}>
+      <Suspense fallback={<HeroSkeleton />}>
         <HeroSection />
       </Suspense>
 

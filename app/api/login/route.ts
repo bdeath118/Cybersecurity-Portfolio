@@ -6,15 +6,19 @@ export async function POST(request: Request) {
   try {
     const { username, password } = await request.json()
 
-    console.log("🔐 Login attempt for username:", username)
+    console.log("🔐 Admin login attempt:", {
+      username,
+      timestamp: new Date().toISOString(),
+      userAgent: request.headers.get("user-agent"),
+    })
 
-    // Validate credentials
+    // Validate credentials using environment variables
     const isValid = await validateUser(username, password)
 
     if (isValid) {
-      console.log("✅ Login successful for:", username)
+      console.log("✅ Admin authentication successful for:", username)
 
-      // Set authentication cookie
+      // Set secure authentication cookie
       const cookieStore = cookies()
       cookieStore.set("admin-auth", "authenticated", {
         httpOnly: true,
@@ -24,13 +28,31 @@ export async function POST(request: Request) {
         path: "/",
       })
 
-      return NextResponse.json({ success: true })
+      return NextResponse.json({
+        success: true,
+        message: "Authentication successful",
+        timestamp: new Date().toISOString(),
+      })
     } else {
-      console.log("❌ Login failed for:", username)
-      return NextResponse.json({ success: false, error: "Invalid username or password" }, { status: 401 })
+      console.log("❌ Admin authentication failed for:", username)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid username or password",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 401 },
+      )
     }
   } catch (error) {
-    console.error("❌ Login error:", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    console.error("❌ Admin login error:", error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 },
+    )
   }
 }
