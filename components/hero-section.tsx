@@ -1,121 +1,198 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { ArrowRight, Download, Mail } from "lucide-react"
-import Image from "next/image"
-import { DigitalBadgesSection } from "./digital-badges-section"
-import { LoadingSpinner } from "./ui/loading-spinner"
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { Mail, MapPin, Phone, Github, Linkedin, Twitter, Download, Eye } from "lucide-react"
+import { getSiteInfo, getPortfolioStats, type SiteInfo } from "@/lib/data"
+
+interface PortfolioStats {
+  projectsCount: number
+  skillsCount: number
+  certificationsCount: number
+  ctfEventsCount: number
+  featuredProjectsCount: number
+}
 
 export function HeroSection() {
-  const [siteInfo, setSiteInfo] = useState<any>(null)
+  const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null)
+  const [stats, setStats] = useState<PortfolioStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [imageLoaded, setImageLoaded] = useState(false)
 
   useEffect(() => {
-    fetch("/api/site-info")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load site information")
-        return res.json()
+    Promise.all([getSiteInfo(), getPortfolioStats()])
+      .then(([siteData, statsData]) => {
+        setSiteInfo(siteData)
+        setStats(statsData)
       })
-      .then((data) => {
-        setSiteInfo(data)
-        setLoading(false)
-      })
-      .catch((error) => {
-        console.error("Error loading site info:", error)
-        setLoading(false)
-      })
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) {
     return (
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20">
-        <div className="flex flex-col items-center gap-4">
-          <LoadingSpinner size="lg" />
-          <p className="text-muted-foreground">Loading portfolio...</p>
+      <section className="relative min-h-[80vh] flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="h-8 bg-muted rounded w-64 mx-auto mb-4"></div>
+          <div className="h-4 bg-muted rounded w-96 mx-auto"></div>
         </div>
       </section>
     )
   }
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20">
-      <div className="container mx-auto max-w-6xl">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Text Content */}
-          <div className="space-y-8 text-center lg:text-left">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-primary tracking-wider uppercase">Cybersecurity Professional</p>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-                  Securing Digital
-                  <span className="block text-primary">Infrastructure</span>
-                </h1>
+    <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src={siteInfo?.background_url || "/images/background.jpeg"}
+          alt="Cybersecurity Background"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-black/60" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 container mx-auto px-4 py-16">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Column - Profile Info */}
+          <div className="text-center lg:text-left">
+            {/* Profile Image */}
+            <div className="mb-8 flex justify-center lg:justify-start">
+              <div className="relative">
+                <Image
+                  src={siteInfo?.avatar_url || "/images/avatar-photo.jpg"}
+                  alt={siteInfo?.name || "Profile"}
+                  width={200}
+                  height={200}
+                  className="rounded-full border-4 border-primary/20 shadow-2xl"
+                />
+                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-transparent" />
               </div>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed">
-                Passionate about protecting digital assets and building secure systems. Specializing in penetration
-                testing, incident response, and security architecture with proven expertise in threat analysis.
+            </div>
+
+            {/* Name and Title */}
+            <div className="mb-6">
+              <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
+                {siteInfo?.name || "Cybersecurity Professional"}
+              </h1>
+              <p className="text-xl lg:text-2xl text-primary font-semibold mb-4">
+                {siteInfo?.title || "Ethical Hacker & Security Consultant"}
+              </p>
+              <p className="text-lg text-gray-200 max-w-2xl">
+                {siteInfo?.description ||
+                  "Passionate about cybersecurity, ethical hacking, and protecting digital assets."}
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link href="/projects">
-                <Button size="lg" className="group min-w-[160px]">
-                  View My Work
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </Link>
-              {siteInfo?.resume ? (
-                <Button variant="outline" size="lg" asChild className="min-w-[160px]">
-                  <a href={siteInfo.resume} target="_blank" rel="noopener noreferrer">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Resume
+            {/* Contact Info */}
+            <div className="mb-8 space-y-3">
+              {siteInfo?.email && (
+                <div className="flex items-center justify-center lg:justify-start space-x-3 text-gray-200">
+                  <Mail className="h-5 w-5 text-primary" />
+                  <a href={`mailto:${siteInfo.email}`} className="hover:text-primary transition-colors">
+                    {siteInfo.email}
+                  </a>
+                </div>
+              )}
+              {siteInfo?.phone && (
+                <div className="flex items-center justify-center lg:justify-start space-x-3 text-gray-200">
+                  <Phone className="h-5 w-5 text-primary" />
+                  <span>{siteInfo.phone}</span>
+                </div>
+              )}
+              {siteInfo?.location && (
+                <div className="flex items-center justify-center lg:justify-start space-x-3 text-gray-200">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <span>{siteInfo.location}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Social Links */}
+            <div className="mb-8 flex justify-center lg:justify-start space-x-4">
+              {siteInfo?.github && (
+                <Button variant="outline" size="icon" asChild>
+                  <a href={siteInfo.github} target="_blank" rel="noopener noreferrer">
+                    <Github className="h-5 w-5" />
                   </a>
                 </Button>
-              ) : (
-                <Link href="/contact">
-                  <Button variant="outline" size="lg" className="min-w-[160px]">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Get In Touch
-                  </Button>
-                </Link>
               )}
+              {siteInfo?.linkedin && (
+                <Button variant="outline" size="icon" asChild>
+                  <a href={siteInfo.linkedin} target="_blank" rel="noopener noreferrer">
+                    <Linkedin className="h-5 w-5" />
+                  </a>
+                </Button>
+              )}
+              {siteInfo?.twitter && (
+                <Button variant="outline" size="icon" asChild>
+                  <a href={siteInfo.twitter} target="_blank" rel="noopener noreferrer">
+                    <Twitter className="h-5 w-5" />
+                  </a>
+                </Button>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <Button size="lg" asChild>
+                <Link href="/projects">
+                  <Eye className="mr-2 h-5 w-5" />
+                  View Projects
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline">
+                <Download className="mr-2 h-5 w-5" />
+                Download CV
+              </Button>
             </div>
           </div>
 
-          {/* Avatar Image */}
-          <div className="flex flex-col items-center space-y-8">
-            <div className="relative">
-              <div className="w-72 h-72 lg:w-80 lg:h-80 rounded-full overflow-hidden border-4 border-primary/20 shadow-2xl bg-gradient-to-br from-primary/5 to-secondary/5">
-                {!imageLoaded && (
-                  <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <LoadingSpinner />
+          {/* Right Column - Stats */}
+          <div className="space-y-6">
+            <Card className="bg-black/40 border-primary/20 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <h3 className="text-2xl font-bold text-white mb-6 text-center">Portfolio Overview</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary mb-2">{stats?.projectsCount || 0}</div>
+                    <div className="text-sm text-gray-300">Security Projects</div>
                   </div>
-                )}
-                <Image
-                  src="/images/avatar-photo.jpg"
-                  alt="Professional headshot"
-                  width={320}
-                  height={320}
-                  className={`w-full h-full object-cover transition-opacity duration-500 ${
-                    imageLoaded ? "opacity-100" : "opacity-0"
-                  }`}
-                  priority
-                  onLoad={() => setImageLoaded(true)}
-                  onError={() => setImageLoaded(true)}
-                />
-              </div>
-              {/* Decorative elements */}
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl"></div>
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-secondary/10 rounded-full blur-2xl"></div>
-            </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary mb-2">{stats?.certificationsCount || 0}</div>
+                    <div className="text-sm text-gray-300">Certifications</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary mb-2">{stats?.skillsCount || 0}</div>
+                    <div className="text-sm text-gray-300">Technical Skills</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary mb-2">{stats?.ctfEventsCount || 0}</div>
+                    <div className="text-sm text-gray-300">CTF Events</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Digital Badges beneath photo */}
-            <div className="w-full max-w-md">
-              <DigitalBadgesSection />
-            </div>
+            {/* Specializations */}
+            <Card className="bg-black/40 border-primary/20 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-white mb-4">Specializations</h3>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">Penetration Testing</Badge>
+                  <Badge variant="secondary">Vulnerability Assessment</Badge>
+                  <Badge variant="secondary">Web App Security</Badge>
+                  <Badge variant="secondary">Network Security</Badge>
+                  <Badge variant="secondary">Ethical Hacking</Badge>
+                  <Badge variant="secondary">Security Consulting</Badge>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

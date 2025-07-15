@@ -1,95 +1,144 @@
 import { createClient } from "@supabase/supabase-js"
 
 // Environment variables with validation
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Validate Supabase configuration
-export function isSupabaseConfigured(): boolean {
-  const hasValidUrl =
-    supabaseUrl &&
-    supabaseUrl !== "your_supabase_project_url_here" &&
-    supabaseUrl.startsWith("https://") &&
-    supabaseUrl.includes(".supabase.co")
-
-  const hasValidKey =
-    supabaseAnonKey && supabaseAnonKey !== "your_supabase_anon_key_here" && supabaseAnonKey.length > 50
-
-  const isConfigured = Boolean(hasValidUrl && hasValidKey)
-
-  if (!isConfigured) {
-    console.warn("⚠️ Supabase not properly configured:")
-    console.warn("   - URL valid:", Boolean(hasValidUrl))
-    console.warn("   - Key valid:", Boolean(hasValidKey))
-    console.warn("   - Current URL:", supabaseUrl?.substring(0, 30) + "...")
+// Validate URL format
+function isValidUrl(url: string): boolean {
+  try {
+    new URL(url)
+    return true
+  } catch {
+    return false
   }
-
-  return isConfigured
 }
 
-// Create Supabase client with validation
-function createSupabaseClient() {
-  if (!isSupabaseConfigured()) {
-    console.warn("⚠️ Creating mock Supabase client - database operations will fail gracefully")
+// Create client-side Supabase client (singleton pattern)
+let clientInstance: ReturnType<typeof createClient> | null = null
 
-    // Return a mock client that prevents errors
-    return {
-      from: () => ({
-        select: () => ({ data: null, error: new Error("Supabase not configured") }),
-        insert: () => ({ data: null, error: new Error("Supabase not configured") }),
-        update: () => ({ data: null, error: new Error("Supabase not configured") }),
-        delete: () => ({ data: null, error: new Error("Supabase not configured") }),
-        eq: () => ({ data: null, error: new Error("Supabase not configured") }),
-        single: () => ({ data: null, error: new Error("Supabase not configured") }),
-        order: () => ({ data: null, error: new Error("Supabase not configured") }),
-        limit: () => ({ data: null, error: new Error("Supabase not configured") }),
-      }),
-      auth: {
-        signIn: () => ({ data: null, error: new Error("Supabase not configured") }),
-        signOut: () => ({ data: null, error: new Error("Supabase not configured") }),
-        getUser: () => ({ data: null, error: new Error("Supabase not configured") }),
-      },
-    } as any
+export function createSupabaseClient() {
+  if (clientInstance) {
+    return clientInstance
+  }
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn("⚠️ Supabase credentials not found. Using mock client.")
+    return createMockClient()
+  }
+
+  if (!isValidUrl(supabaseUrl)) {
+    console.error("❌ Invalid Supabase URL format:", supabaseUrl)
+    return createMockClient()
   }
 
   try {
-    return createClient(supabaseUrl!, supabaseAnonKey!)
+    clientInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+
+    console.log("✅ Supabase client initialized successfully")
+    return clientInstance
   } catch (error) {
     console.error("❌ Failed to create Supabase client:", error)
-    throw error
+    return createMockClient()
   }
 }
 
-// Create admin client with service role key
-function createSupabaseAdminClient() {
-  if (!isSupabaseConfigured() || !supabaseServiceKey) {
-    console.warn("⚠️ Creating mock Supabase admin client")
-    return createSupabaseClient() // Return regular client as fallback
+// Create server-side Supabase client with service role key
+export function createSupabaseServerClient() {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.warn("⚠️ Supabase server credentials not found. Using mock client.")
+    return createMockClient()
+  }
+
+  if (!isValidUrl(supabaseUrl)) {
+    console.error("❌ Invalid Supabase URL format:", supabaseUrl)
+    return createMockClient()
   }
 
   try {
-    return createClient(supabaseUrl!, supabaseServiceKey)
+    return createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
   } catch (error) {
-    console.error("❌ Failed to create Supabase admin client:", error)
-    return createSupabaseClient() // Fallback to regular client
+    console.error("❌ Failed to create Supabase server client:", error)
+    return createMockClient()
   }
 }
 
-// Export clients
-export const supabase = createSupabaseClient()
-export const supabaseAdmin = createSupabaseAdminClient()
+// Mock client for development/fallback
+function createMockClient() {
+  return {
+    from: (table: string) => ({
+      select: (columns?: string) => ({
+        single: () => Promise.resolve({ data: null, error: { message: "Mock client - no database connection" } }),
+        order: (column: string, options?: any) =>
+          Promise.resolve({ data: [], error: { message: "Mock client - no database connection" } }),
+        eq: (column: string, value: any) => ({
+          single: () => Promise.resolve({ data: null, error: { message: "Mock client - no database connection" } }),
+        }),
+      }),
+      insert: (data: any) => ({
+        select: () => ({
+          single: () => Promise.resolve({ data: null, error: { message: "Mock client - no database connection" } }),
+        }),
+      }),
+      update: (data: any) => ({
+        eq: (column: string, value: any) => ({
+          select: () => ({
+            single: () => Promise.resolve({ data: null, error: { message: "Mock client - no database connection" } }),
+          }),
+        }),
+      }),
+      upsert: (data: any) => ({
+        select: () => ({
+          single: () => Promise.resolve({ data: null, error: { message: "Mock client - no database connection" } }),
+        }),
+      }),
+      delete: () => ({
+        eq: (column: string, value: any) =>
+          Promise.resolve({ data: null, error: { message: "Mock client - no database connection" } }),
+      }),
+    }),
+    auth: {
+      signInWithPassword: () => Promise.resolve({ data: null, error: { message: "Mock client - no auth" } }),
+      signOut: () => Promise.resolve({ error: null }),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+    storage: {
+      from: (bucket: string) => ({
+        upload: () => Promise.resolve({ data: null, error: { message: "Mock client - no storage" } }),
+        getPublicUrl: (path: string) => ({ data: { publicUrl: `/mock/${path}` } }),
+      }),
+    },
+  } as any
+}
 
-// Export configuration status
-export const SUPABASE_CONFIGURED = isSupabaseConfigured()
+// Default export for client-side usage
+export default createSupabaseClient()
 
-// Log configuration status
-if (typeof window === "undefined") {
-  // Only log on server side
-  if (SUPABASE_CONFIGURED) {
-    console.log("✅ Supabase configured successfully")
-  } else {
-    console.log("⚠️ Supabase not configured - using fallback data")
+// Check if Supabase is properly configured
+export function isSupabaseConfigured(): boolean {
+  return !!(supabaseUrl && supabaseAnonKey && isValidUrl(supabaseUrl))
+}
+
+// Get configuration status
+export function getSupabaseConfig() {
+  return {
+    hasUrl: !!supabaseUrl,
+    hasAnonKey: !!supabaseAnonKey,
+    hasServiceKey: !!supabaseServiceKey,
+    isValidUrl: supabaseUrl ? isValidUrl(supabaseUrl) : false,
+    isConfigured: isSupabaseConfigured(),
   }
 }
 

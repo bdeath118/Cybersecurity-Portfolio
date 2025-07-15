@@ -29,9 +29,9 @@ export async function authenticateUser(username: string, password: string) {
 
   try {
     // Use the validateUser function from data layer
-    const user = await validateUser(username, password)
+    const isValid = await validateUser(username, password)
 
-    if (user) {
+    if (isValid) {
       console.log("🎉 Authentication successful!")
 
       // Create a session token

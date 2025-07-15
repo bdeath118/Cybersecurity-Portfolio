@@ -1,88 +1,98 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Shield, Menu, X } from "lucide-react"
-import { useState } from "react"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu, Shield, Home, User, Award, Trophy, Code, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useCustomTheme } from "@/components/custom-theme-provider"
+
+const navigation = [
+  { name: "Home", href: "/", icon: Home },
+  { name: "Projects", href: "/projects", icon: Code },
+  { name: "Skills", href: "/skills", icon: User },
+  { name: "Certifications", href: "/certifications", icon: Award },
+  { name: "CTF Events", href: "/ctf", icon: Trophy },
+  { name: "Contact", href: "/contact", icon: Mail },
+]
 
 export function SiteHeader() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const { siteInfo } = useCustomTheme()
-
-  const routes = [
-    { href: "/", label: "Home" },
-    { href: "/projects", label: "Projects" },
-    { href: "/skills", label: "Skills" },
-    { href: "/certifications", label: "Certifications" },
-    { href: "/ctf", label: "CTF Events" },
-    { href: "/contact", label: "Contact" },
-  ]
-
-  const isActive = (path: string) => pathname === path
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          {siteInfo?.icon ? (
-            <div className="h-7 w-7 bg-primary rounded flex items-center justify-center">
-              <Shield className="h-4 w-4 text-primary-foreground" />
-            </div>
-          ) : (
-            <Shield className="h-7 w-7 text-primary" />
-          )}
-          <span className="font-bold text-lg">CyberSec Portfolio</span>
+      <div className="container flex h-16 items-center">
+        {/* Logo */}
+        <Link href="/" className="flex items-center space-x-2">
+          <Shield className="h-6 w-6 text-primary" />
+          <span className="font-bold text-xl">CyberSec Portfolio</span>
         </Link>
 
-        <nav className="hidden md:flex gap-8">
-          {routes.map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary relative py-2",
-                isActive(route.href)
-                  ? "text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary after:rounded-full"
-                  : "text-muted-foreground",
-              )}
-            >
-              {route.label}
-            </Link>
-          ))}
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium ml-8">
+          {navigation.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center space-x-2 transition-colors hover:text-primary",
+                  pathname === item.href ? "text-primary font-semibold" : "text-muted-foreground",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.name}</span>
+              </Link>
+            )
+          })}
         </nav>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden hover:bg-primary/10"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        {/* Mobile Navigation */}
+        <div className="flex flex-1 items-center justify-end md:hidden">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <nav className="flex flex-col space-y-4">
+                <div className="flex items-center space-x-2 pb-4 border-b">
+                  <Shield className="h-6 w-6 text-primary" />
+                  <span className="font-bold text-xl">CyberSec Portfolio</span>
+                </div>
+                {navigation.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center space-x-3 text-lg font-medium transition-colors hover:text-primary p-2 rounded-md",
+                        pathname === item.href ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
 
-        {isMenuOpen && (
-          <div className="absolute top-16 left-0 right-0 bg-background/95 backdrop-blur border-b shadow-lg p-6 md:hidden">
-            <nav className="flex flex-col space-y-4">
-              {routes.map((route) => (
-                <Link
-                  key={route.href}
-                  href={route.href}
-                  className={cn(
-                    "text-base font-medium transition-colors hover:text-primary py-2 px-3 rounded-md hover:bg-primary/5",
-                    isActive(route.href) ? "text-primary bg-primary/10" : "text-muted-foreground",
-                  )}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {route.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        )}
+        {/* Admin Link (Desktop) */}
+        <div className="hidden md:flex items-center ml-auto">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/admin">Admin</Link>
+          </Button>
+        </div>
       </div>
     </header>
   )
