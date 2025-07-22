@@ -1,10 +1,11 @@
 "use client"
 
-import type React from "react"
+import { CardDescription } from "@/components/ui/card"
 
+import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,10 +15,13 @@ import type { SiteInfo } from "@/lib/types"
 import { updateSiteInformation, uploadIcon, uploadBackgroundImage, uploadResume } from "@/lib/actions"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
-import { FileText } from "lucide-react"
 
-export function SiteInfoManager() {
-  const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null)
+interface SiteInfoManagerProps {
+  initialSiteInfo: SiteInfo
+}
+
+export function SiteInfoManager({ initialSiteInfo }: SiteInfoManagerProps) {
+  const [siteInfo, setSiteInfo] = useState<SiteInfo>(initialSiteInfo)
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -34,45 +38,20 @@ export function SiteInfoManager() {
   const [selectedResumeFile, setSelectedResumeFile] = useState<File | null>(null)
 
   useEffect(() => {
-    async function fetchSiteInfo() {
-      try {
-        const response = await fetch("/api/site-info")
-        const data = await response.json()
-        setSiteInfo(data)
-        setBgOpacity(data.backgroundOpacity || 100)
-      } catch (error) {
-        console.error("Error fetching site info:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load site information",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
+    setSiteInfo(initialSiteInfo)
+    setLoading(false)
+  }, [initialSiteInfo])
 
-    fetchSiteInfo()
-  }, [toast])
-
-  async function handleUpdateSiteInfo(formData: FormData) {
+  const handleSave = async () => {
     setIsSaving(true)
 
     try {
-      const result = await updateSiteInformation(formData)
-
-      if (result.success) {
-        setSiteInfo(result.info)
-        toast({
-          title: "Success",
-          description: "Site information updated successfully",
-        })
-      }
-    } catch (error) {
-      console.error("Error updating site info:", error)
+      await updateSiteInformation(siteInfo)
+      toast({ title: "Success", description: "Site information updated successfully." })
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update site information",
+        description: `Failed to update site information: ${error.message || "Unknown error"}`,
         variant: "destructive",
       })
     } finally {
@@ -101,7 +80,7 @@ export function SiteInfoManager() {
       const result = await uploadIcon(formData)
 
       if (result.success) {
-        setSiteInfo((prev) => (prev ? { ...prev, icon: result.iconUrl } : null))
+        setSiteInfo((prev) => ({ ...prev, icon: result.iconUrl }))
         setIconPreview(null)
         setSelectedFile(null)
         toast({
@@ -143,15 +122,11 @@ export function SiteInfoManager() {
       const result = await uploadBackgroundImage(formData)
 
       if (result.success) {
-        setSiteInfo((prev) =>
-          prev
-            ? {
-                ...prev,
-                backgroundImage: result.backgroundImageUrl,
-                backgroundOpacity: bgOpacity,
-              }
-            : null,
-        )
+        setSiteInfo((prev) => ({
+          ...prev,
+          backgroundImage: result.backgroundImageUrl,
+          backgroundOpacity: bgOpacity,
+        }))
         setBgPreview(null)
         setSelectedBgFile(null)
         toast({
@@ -172,7 +147,7 @@ export function SiteInfoManager() {
   }
 
   async function handleOpacityChange() {
-    if (!siteInfo?.backgroundImage) return
+    if (!siteInfo.backgroundImage) return
 
     setIsSaving(true)
 
@@ -247,7 +222,7 @@ export function SiteInfoManager() {
       const result = await uploadResume(formData)
 
       if (result.success) {
-        setSiteInfo((prev) => (prev ? { ...prev, resume: result.resumeUrl } : null))
+        setSiteInfo((prev) => ({ ...prev, resume: result.resumeUrl }))
         setResumePreview(null)
         setSelectedResumeFile(null)
         toast({
@@ -279,10 +254,6 @@ export function SiteInfoManager() {
     return <div className="text-center py-8">Loading site information...</div>
   }
 
-  if (!siteInfo) {
-    return <div className="text-center py-8 text-muted-foreground">Site information not found.</div>
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -302,82 +273,97 @@ export function SiteInfoManager() {
               <CardDescription>Update your personal information and contact details</CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={handleUpdateSiteInfo} className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" name="name" defaultValue={siteInfo.name} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Professional Title</Label>
-                    <Input id="title" name="title" defaultValue={siteInfo.title} required />
-                  </div>
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="site-name">Site Name</Label>
+                  <Input
+                    id="site-name"
+                    value={siteInfo.site_name}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, site_name: e.target.value })}
+                  />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Bio/Description</Label>
-                  <Textarea id="description" name="description" rows={4} defaultValue={siteInfo.description} required />
+                <div>
+                  <Label htmlFor="site-title">Site Title</Label>
+                  <Input
+                    id="site-title"
+                    value={siteInfo.title}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, title: e.target.value })}
+                  />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" name="email" type="email" defaultValue={siteInfo.email} required />
+                <div>
+                  <Label htmlFor="site-description">Site Description</Label>
+                  <Textarea
+                    id="site-description"
+                    value={siteInfo.description}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, description: e.target.value })}
+                  />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="github">GitHub URL</Label>
-                  <Input id="github" name="github" defaultValue={siteInfo.github} />
+                <div>
+                  <Label htmlFor="seo-title">SEO Title</Label>
+                  <Input
+                    id="seo-title"
+                    value={siteInfo.seo_title}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, seo_title: e.target.value })}
+                  />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="linkedin">LinkedIn URL</Label>
-                  <Input id="linkedin" name="linkedin" defaultValue={siteInfo.linkedin} />
+                <div>
+                  <Label htmlFor="seo-description">SEO Description</Label>
+                  <Textarea
+                    id="seo-description"
+                    value={siteInfo.seo_description}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, seo_description: e.target.value })}
+                  />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="resume">Resume/CV</Label>
-                  <div className="space-y-4">
-                    {siteInfo.resume && (
-                      <div className="flex items-center gap-2 p-3 border rounded-md">
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm">Current resume uploaded</span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(siteInfo.resume, "_blank")}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    )}
-
-                    <form onSubmit={handleResumeUpload} className="space-y-4">
-                      <div className="space-y-2">
-                        <Input
-                          id="resume"
-                          name="resume"
-                          type="file"
-                          accept=".pdf,.doc,.docx"
-                          onChange={handleResumeFileChange}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Upload your resume in PDF, DOC, or DOCX format (max 5MB)
-                        </p>
-                        {resumePreview && <p className="text-sm text-muted-foreground">Selected: {resumePreview}</p>}
-                      </div>
-
-                      <Button type="submit" disabled={isUploadingResume || !selectedResumeFile}>
-                        {isUploadingResume ? "Uploading..." : "Upload Resume"}
-                      </Button>
-                    </form>
-                  </div>
+                <div>
+                  <Label htmlFor="keywords">Keywords (comma-separated)</Label>
+                  <Input
+                    id="keywords"
+                    value={siteInfo.keywords.join(", ")}
+                    onChange={(e) =>
+                      setSiteInfo({
+                        ...siteInfo,
+                        keywords: e.target.value.split(",").map((k) => k.trim()),
+                      })
+                    }
+                  />
                 </div>
-
-                <Button type="submit" className="w-full" disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save Changes"}
+                <div>
+                  <Label htmlFor="site-url">Site URL</Label>
+                  <Input
+                    id="site-url"
+                    value={siteInfo.site_url}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, site_url: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="social-image-url">Social Share Image URL</Label>
+                  <Input
+                    id="social-image-url"
+                    value={siteInfo.social_image_url}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, social_image_url: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="avatar-url">Avatar URL</Label>
+                  <Input
+                    id="avatar-url"
+                    value={siteInfo.avatar_url}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, avatar_url: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="theme-color">Theme Color (Hex)</Label>
+                  <Input
+                    id="theme-color"
+                    type="color"
+                    value={siteInfo.theme_color}
+                    onChange={(e) => setSiteInfo({ ...siteInfo, theme_color: e.target.value })}
+                  />
+                </div>
+                <Button onClick={handleSave} className="w-full" disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save Site Info"}
                 </Button>
-              </form>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -390,7 +376,7 @@ export function SiteInfoManager() {
                 <CardDescription>Customize the colors of your portfolio website</CardDescription>
               </CardHeader>
               <CardContent>
-                <form action={handleUpdateSiteInfo} className="space-y-6">
+                <form action={handleSave} className="space-y-6">
                   <input type="hidden" name="updateType" value="theme" />
 
                   <div className="space-y-4">

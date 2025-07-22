@@ -1,23 +1,38 @@
 import { NextResponse } from "next/server"
-import { getEnv } from "@/lib/env"
+import { isAuthenticated } from "@/lib/auth"
+import { getSiteInfo, updateSiteInfo, getUnderConstructionSettings, updateUnderConstructionSettings } from "@/lib/data"
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!isAuthenticated(request)) {
+    return new NextResponse(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
+  }
   try {
-    const env = getEnv()
+    const siteInfo = await getSiteInfo()
+    const underConstructionSettings = await getUnderConstructionSettings()
+    return NextResponse.json({ siteInfo, underConstructionSettings })
+  } catch (error) {
+    console.error("API Error: Failed to fetch advanced settings:", error)
+    return new NextResponse(JSON.stringify({ error: "Failed to fetch advanced settings" }), { status: 500 })
+  }
+}
 
-    // Return current advanced settings
-    const settings = {
-      siteUrl: env.SITE_URL,
-      enableAnalytics: false,
-      enableSEO: true,
-      customCSS: "",
-      customJS: "",
-      maintenanceMode: false,
+export async function PUT(request: Request) {
+  if (!isAuthenticated(request)) {
+    return new NextResponse(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
+  }
+  try {
+    const { siteInfo: newSiteInfo, underConstructionSettings: newUnderConstructionSettings } = await request.json()
+
+    if (newSiteInfo) {
+      await updateSiteInfo(newSiteInfo)
+    }
+    if (newUnderConstructionSettings) {
+      await updateUnderConstructionSettings(newUnderConstructionSettings)
     }
 
-    return NextResponse.json(settings)
+    return new NextResponse(JSON.stringify({ message: "Advanced settings updated successfully" }), { status: 200 })
   } catch (error) {
-    console.error("Error fetching advanced settings:", error)
-    return NextResponse.json({ error: "Failed to fetch advanced settings" }, { status: 500 })
+    console.error("API Error: Failed to update advanced settings:", error)
+    return new NextResponse(JSON.stringify({ error: "Failed to update advanced settings" }), { status: 500 })
   }
 }

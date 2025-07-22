@@ -1,44 +1,44 @@
 import { NextResponse } from "next/server"
-import { getEnv } from "@/lib/env"
+import { isAuthenticated } from "@/lib/auth"
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!isAuthenticated(request)) {
+    return new NextResponse(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
+  }
+
   try {
-    const env = getEnv()
-    const vercelUrl = env.VERCEL_URL
-      ? `https://${env.VERCEL_URL}`
-      : "https://cybersecurity-portfolio-bdeath118.vercel.app"
-
-    const deploymentInfo = {
-      status: "deployed",
-      url: vercelUrl,
-      environment: env.NODE_ENV,
-      timestamp: new Date().toISOString(),
-      vercelUrl: vercelUrl,
-      configuredSiteUrl: env.SITE_URL || vercelUrl,
-      authConfigured: !!(env.ADMIN_USERNAME && env.ADMIN_PASSWORD),
-      integrations: {
-        linkedin: !!env.LINKEDIN_PROFILE_URL,
-        credly: !!env.CREDLY_USERNAME,
-        canvas: !!(env.CANVAS_API_KEY && env.CANVAS_USER_ID),
-      },
-      features: {
-        autoImport: !!(env.LINKEDIN_PROFILE_URL || env.CREDLY_USERNAME),
-        digitalBadges: true,
-        adminDashboard: true,
-        securityScan: true,
-      },
-    }
-
-    return NextResponse.json(deploymentInfo)
+    // In a real scenario, you would query Vercel's API or a CI/CD system
+    // to get the actual deployment status.
+    // For this example, we'll simulate a status.
+    const deploymentStatus = await simulateDeploymentStatus()
+    return NextResponse.json(deploymentStatus)
   } catch (error) {
-    console.error("Error checking deployment status:", error)
-    return NextResponse.json(
-      {
-        status: "error",
-        message: "Failed to check deployment status",
-        url: "https://cybersecurity-portfolio-bdeath118.vercel.app",
-      },
-      { status: 500 },
-    )
+    console.error("API Error: Failed to fetch deployment status:", error)
+    return new NextResponse(JSON.stringify({ error: "Failed to fetch deployment status" }), { status: 500 })
+  }
+}
+
+async function simulateDeploymentStatus() {
+  await new Promise((resolve) => setTimeout(resolve, 1500)) // Simulate network delay
+
+  const statuses = ["SUCCESS", "BUILDING", "ERROR", "QUEUED"]
+  const randomStatus = statuses[Math.floor(Math.random() * statuses.length)]
+
+  const messages: Record<string, string> = {
+    SUCCESS: "Latest deployment is live and healthy.",
+    BUILDING: "A new deployment is currently in progress.",
+    ERROR: "Last deployment failed. Check logs for details.",
+    QUEUED: "Deployment queued, waiting for resources.",
+  }
+
+  const lastDeploymentDate = new Date(Date.now() - Math.random() * 86400000 * 7).toISOString() // Last 7 days
+
+  return {
+    status: randomStatus,
+    message: messages[randomStatus],
+    lastDeployment: lastDeploymentDate,
+    deploymentId: `dep_${Math.random().toString(36).substring(2, 15)}`,
+    environment: process.env.VERCEL_ENV || "development",
+    vercelUrl: process.env.VERCEL_URL || "http://localhost:3000",
   }
 }

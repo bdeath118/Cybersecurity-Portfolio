@@ -1,55 +1,42 @@
 import { createClient } from "@supabase/supabase-js"
 
-// Supabase configuration with the provided URL
-const supabaseUrl = "https://icustcymiynpwjfoogtc.supabase.co"
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Ensure these are set in your environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://icustcymiynpwjfoogtc.supabase.co/"
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Validate Supabase configuration
-export function isSupabaseConfigured(): boolean {
-  const hasValidUrl = Boolean(supabaseUrl && supabaseUrl.startsWith("https://") && supabaseUrl.includes(".supabase.co"))
-  const hasValidKey = Boolean(supabaseAnonKey && supabaseAnonKey.length > 50)
-
-  console.log("Supabase Configuration Check:", {
-    url: supabaseUrl,
-    hasAnonKey: Boolean(supabaseAnonKey),
-    hasServiceKey: Boolean(supabaseServiceKey),
-    isConfigured: hasValidUrl && hasValidKey,
-  })
-
-  return hasValidUrl && hasValidKey
+if (!supabaseUrl) {
+  console.warn("NEXT_PUBLIC_SUPABASE_URL is not set. Supabase client may not function correctly.")
+}
+if (!supabaseAnonKey) {
+  console.warn("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Supabase client may not function correctly.")
 }
 
-// Create client-side Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey || "dummy-key", {
+// Client-side Supabase client (for use in browser environments)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey!, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
   },
 })
 
-// Create server-side Supabase client with service role key
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey || "dummy-key", {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-})
+// Server-side Supabase client (for use in API routes, server components, server actions)
+// This client uses the service role key for elevated privileges,
+// which should NEVER be exposed to the client-side.
+export const createAdminClient = () => {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Test connection function
-export async function testSupabaseConnection() {
-  try {
-    const { data, error } = await supabase.from("site_info").select("count", { count: "exact", head: true })
-    if (error) {
-      console.warn("Supabase connection test failed:", error.message)
-      return false
-    }
-    console.log("✅ Supabase connection successful")
-    return true
-  } catch (error) {
-    console.error("❌ Supabase connection error:", error)
-    return false
+  if (!serviceRoleKey) {
+    console.error("SUPABASE_SERVICE_ROLE_KEY is not set. Admin client cannot be created.")
+    throw new Error("Supabase service role key is missing.")
   }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }
 
 // Database types
@@ -322,7 +309,30 @@ export interface Database {
 }
 
 // Initialize Supabase connection on module load
+let supabaseAdmin: any
+
 if (typeof window === "undefined") {
   // Server-side initialization
-  testSupabaseConnection()
+  supabaseAdmin = createAdminClient()
+}
+
+// Test connection function
+export async function testSupabaseConnection() {
+  if (typeof window !== "undefined") {
+    console.warn("Supabase connection test is only available on server-side.")
+    return false
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin.from("site_info").select("count", { count: "exact", head: true })
+    if (error) {
+      console.warn("Supabase connection test failed:", error.message)
+      return false
+    }
+    console.log("✅ Supabase connection successful")
+    return true
+  } catch (error) {
+    console.error("❌ Supabase connection error:", error)
+    return false
+  }
 }

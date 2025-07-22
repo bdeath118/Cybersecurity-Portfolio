@@ -1,32 +1,42 @@
-import { type NextRequest, NextResponse } from "next/server"
+import LRUCache from "lru-cache"
 
-// Store IP addresses and their request counts
-// In a production app, use Redis or another persistent store
-const ipRequestMap = new Map<string, number[]>()
+interface RateLimitOptions {
+  interval: number // in milliseconds
+  uniqueTokenPerInterval: number
+}
 
-export function rateLimit(req: NextRequest) {
-  const ip = req.ip || "unknown"
-  const now = Date.now()
-  const windowMs = 15 * 60 * 1000 // 15 minutes
-  const maxRequests = 5 // 5 requests per windowMs
+interface RateLimitInfo {
+  count: number
+  lastReset: number
+}
 
-  // Get existing requests for this IP
-  const requestTimes = ipRequestMap.get(ip) || []
+export function rateLimit(options: RateLimitOptions) {
+  const tokens = new LRUCache<string, RateLimitInfo>({
+    max: options.uniqueTokenPerInterval,
+    ttl: options.interval,
+  })
 
-  // Filter out requests older than the window
-  const recentRequests = requestTimes.filter((time) => now - time < windowMs)
+  return {
+    check: (token: string): boolean => {
+      const now = Date.now()
+      let tokenInfo = tokens.get(token)
 
-  // Check if rate limit exceeded
-  if (recentRequests.length >= maxRequests) {
-    return NextResponse.json(
-      { success: false, message: "Too many login attempts. Please try again later." },
-      { status: 429 },
-    )
+      if (!tokenInfo || now - tokenInfo.lastReset > options.interval) {
+        tokenInfo = { count: 0, lastReset: now }
+        tokens.set(token, tokenInfo)
+      }
+
+      tokenInfo.count++
+      return tokenInfo.count <= options.uniqueTokenPerInterval
+    },
+    limit: options.uniqueTokenPerInterval,
+    remaining: (token: string): number => {
+      const tokenInfo = tokens.get(token)
+      return tokenInfo ? Math.max(0, options.uniqueTokenPerInterval - tokenInfo.count) : options.uniqueTokenPerInterval
+    },
+    reset: (token: string): number => {
+      const tokenInfo = tokens.get(token)
+      return tokenInfo ? tokenInfo.lastReset + options.interval : Date.now() + options.interval
+    },
   }
-
-  // Add current request time
-  recentRequests.push(now)
-  ipRequestMap.set(ip, recentRequests)
-
-  return null // No rate limit exceeded
 }

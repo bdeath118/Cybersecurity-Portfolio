@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server"
-import { CredlyAuthProvider } from "@/lib/auth-providers"
 
 export async function GET() {
-  try {
-    const provider = new CredlyAuthProvider()
-    const loginUrl = await provider.getLoginUrl()
+  // In a real application, this would redirect to Credly's OAuth authorization endpoint.
+  // For this portfolio, we'll simulate a successful "login" and redirect to a callback.
+  // The actual data fetching happens in the callback using the configured username.
 
-    if (!loginUrl) {
-      return NextResponse.redirect(
-        new URL("/admin/dashboard?error=credly_not_configured", process.env.SITE_URL || "http://localhost:3000"),
-      )
-    }
+  const credlyUsername = process.env.CREDLY_USERNAME
 
-    return NextResponse.redirect(loginUrl)
-  } catch (error) {
-    console.error("Error initiating Credly login:", error)
-    return NextResponse.redirect(
-      new URL("/admin/dashboard?error=credly_login_failed", process.env.SITE_URL || "http://localhost:3000"),
-    )
+  if (!credlyUsername) {
+    return new NextResponse(JSON.stringify({ error: "Credly username not configured in environment variables." }), {
+      status: 400,
+    })
   }
+
+  // Simulate OAuth redirect
+  const redirectUrl = new URL("/api/auth/credly/callback", process.env.NEXTAUTH_URL || "http://localhost:3000")
+  redirectUrl.searchParams.set("code", "mock_credly_auth_code") // Simulate an auth code
+
+  return NextResponse.redirect(redirectUrl.toString())
 }

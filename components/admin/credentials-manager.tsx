@@ -1,14 +1,17 @@
 "use client"
 
+import { CardDescription } from "@/components/ui/card"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Eye, EyeOff, Save, ExternalLink, CheckCircle, AlertCircle, Shield, Bug, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import type { SiteInfo } from "@/lib/types"
+import { updateSiteInfo } from "@/lib/data" // Assuming this is a Server Action or API call
 
 interface PlatformCredentials {
   clientId: string
@@ -40,7 +43,11 @@ const defaultCredentials: AllCredentials = {
   github: { clientId: "", clientSecret: "", configured: false },
 }
 
-export function CredentialsManager() {
+interface CredentialsManagerProps {
+  initialSiteInfo: SiteInfo
+}
+
+export function CredentialsManager({ initialSiteInfo }: CredentialsManagerProps) {
   const [credentials, setCredentials] = useState<AllCredentials>(defaultCredentials)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -50,6 +57,7 @@ export function CredentialsManager() {
   const [integrationStatuses, setIntegrationStatuses] = useState<
     Record<string, { status: "idle" | "loading" | "success" | "error"; message: string; details?: any }>
   >({})
+  const [siteInfo, setSiteInfo] = useState<SiteInfo>(initialSiteInfo)
 
   useEffect(() => {
     async function fetchCredentials() {
@@ -209,6 +217,23 @@ export function CredentialsManager() {
     }
   }
 
+  const handleSave = async () => {
+    try {
+      await updateSiteInfo(siteInfo)
+      toast({ title: "Success", description: "Credentials updated successfully." })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: `Failed to update credentials: ${error.message || "Unknown error"}`,
+        variant: "destructive",
+      })
+    }
+  }
+
+  useEffect(() => {
+    setSiteInfo(initialSiteInfo)
+  }, [initialSiteInfo])
+
   if (loading) {
     return (
       <Card>
@@ -315,7 +340,7 @@ export function CredentialsManager() {
   ]
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="h-5 w-5" />
@@ -460,6 +485,66 @@ export function CredentialsManager() {
             </TabsContent>
           ))}
         </Tabs>
+        <div className="mt-6">
+          <Label htmlFor="linkedin-url">LinkedIn Profile URL</Label>
+          <Input
+            id="linkedin-url"
+            value={siteInfo.linkedin_profile_url || ""}
+            onChange={(e) => setSiteInfo({ ...siteInfo, linkedin_profile_url: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="github-username">GitHub Username</Label>
+          <Input
+            id="github-username"
+            value={siteInfo.github_username || ""}
+            onChange={(e) => setSiteInfo({ ...siteInfo, github_username: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="credly-username">Credly Username</Label>
+          <Input
+            id="credly-username"
+            value={siteInfo.credly_username || ""}
+            onChange={(e) => setSiteInfo({ ...siteInfo, credly_username: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="hackerone-username">HackerOne Username</Label>
+          <Input
+            id="hackerone-username"
+            value={siteInfo.hackerone_username || ""}
+            onChange={(e) => setSiteInfo({ ...siteInfo, hackerone_username: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="hackthebox-username">Hack The Box Username</Label>
+          <Input
+            id="hackthebox-username"
+            value={siteInfo.hackthebox_username || ""}
+            onChange={(e) => setSiteInfo({ ...siteInfo, hackthebox_username: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="email-address">Email Address</Label>
+          <Input
+            id="email-address"
+            type="email"
+            value={siteInfo.email_address || ""}
+            onChange={(e) => setSiteInfo({ ...siteInfo, email_address: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="twitter-handle">Twitter Handle</Label>
+          <Input
+            id="twitter-handle"
+            value={siteInfo.twitter || ""}
+            onChange={(e) => setSiteInfo({ ...siteInfo, twitter: e.target.value })}
+          />
+        </div>
+        <Button onClick={handleSave} className="mt-4">
+          Save Credentials
+        </Button>
       </CardContent>
     </Card>
   )

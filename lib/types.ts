@@ -1,214 +1,172 @@
+export interface SiteInfo {
+  id: string
+  site_name: string
+  title: string
+  description: string
+  seo_title: string
+  seo_description: string
+  keywords: string[]
+  site_url: string
+  social_image_url: string
+  avatar_url: string
+  linkedin_profile_url: string
+  github_username: string
+  credly_username: string
+  hackerone_username: string
+  hackthebox_username: string
+  email_address: string
+  theme_color: string
+  twitter: string
+  admin_username: string
+  admin_password_hash: string
+  last_updated: string
+}
+
 export interface Project {
   id: string
   title: string
-  summary: string
   description: string
-  image?: string
+  image_url: string
+  github_url?: string
+  live_url?: string
   technologies: string[]
-  demoUrl?: string
-  githubUrl?: string
+  category: string
   date: string
-  linkedinImported?: boolean
-  lastUpdated?: string
 }
 
 export interface Skill {
   id: string
   name: string
-  level: number
+  proficiency: number // 0-100
   category: string
-  linkedinImported?: boolean
-  endorsements?: number
-  lastUpdated?: string
+  icon?: string // Lucide icon name or path
 }
 
 export interface Certification {
   id: string
   name: string
   issuer: string
+  issue_date: string
+  expiration_date?: string
+  credential_id?: string
+  credential_url?: string
+  image_url?: string
+  category: string
+}
+
+export interface CTFEvent {
+  id: string
+  name: string
+  platform: string
   date: string
-  expiryDate?: string
+  rank?: string
+  score?: number
+  challenges_solved?: number
   description: string
-  logo?: string
-  credentialUrl?: string
-  verificationStatus?: "verified" | "pending" | "expired"
-  autoImported?: boolean
+  url?: string
+  image_url?: string
 }
 
 export interface DigitalBadge {
   id: string
   name: string
   issuer: string
-  date: string
-  description: string
-  badgeUrl: string
-  verificationUrl?: string
-  platform: "linkedin" | "canvas" | "credly" | "other"
-  skills?: string[]
-  image?: string
-}
-
-export interface CTFEvent {
-  id: string
-  name: string
-  date: string
-  difficulty: "Easy" | "Medium" | "Hard"
-  team: string
-  rank: number
-  totalTeams: number
-  flagsCaptured: number
-  description?: string
-  challenges?: CTFChallenge[]
-  platform?: "ctftime" | "picoctf" | "tryhackme" | "hackthebox" | "other"
-  points?: number
-  writeupUrl?: string
-}
-
-export interface CTFChallenge {
-  id: string
-  name: string
-  category: string
-  points: number
-  solved: boolean
+  issue_date: string
+  credential_url: string
+  image_url: string
   description?: string
 }
 
-export interface BugBountyFinding {
+export interface BugBountyProgram {
   id: string
-  title: string
-  platform: "hackerone" | "bugcrowd" | "intigriti" | "other"
-  severity: "critical" | "high" | "medium" | "low" | "info"
-  status: "resolved" | "triaged" | "duplicate" | "not-applicable"
-  bounty?: number
-  date: string
-  description: string
-  cve?: string
-  reportUrl?: string
-  company: string
+  name: string
+  platform: string
+  rewards: string
+  scope: string
+  url: string
+  status: "active" | "inactive" | "private"
+  last_updated: string
 }
 
 export interface SecurityArticle {
   id: string
   title: string
-  platform: "medium" | "personal" | "dev.to" | "hashnode" | "other"
+  author: string
+  publish_date: string
   url: string
-  publishedDate: string
   summary: string
   tags: string[]
-  readTime?: number
-  views?: number
-  claps?: number
 }
 
 export interface OSINTCapability {
   id: string
   name: string
-  category: "reconnaissance" | "social-media" | "domain-analysis" | "threat-intelligence" | "other"
   description: string
   tools: string[]
-  examples?: string[]
-  proficiencyLevel: number
+  use_cases: string[]
 }
 
-export interface User {
-  id: string
-  username: string
-  password: string
+export interface UnderConstructionSettings {
+  enabled: boolean
+  message: string
+  estimatedCompletion: string
+  progressPercentage: number
+  allowAdminAccess: boolean
 }
 
-export interface SiteInfo {
-  name: string
-  title: string
-  description: string
-  email: string
-  github?: string
-  linkedin?: string
-  linkedinProfileUrl?: string
-  resume?: string
-  theme?: {
-    primaryColor: string
-    secondaryColor: string
-    backgroundColor: string
-    textColor: string
-  }
-  icon?: string
-  backgroundImage?: string
-  backgroundOpacity?: number
-  siteUrl?: string
-  autoImportSettings?: {
-    linkedinEnabled: boolean
-    badgesEnabled: boolean
-    lastImport?: string
-    importFrequency: "daily" | "weekly" | "manual"
-  }
-  underConstructionMode?: {
-    enabled: boolean
-    message: string
-    estimatedCompletion: string
-    progressPercentage: number
-    allowAdminAccess: boolean
-  }
+export interface PortfolioStats {
+  projectsCount: number
+  skillsCount: number
+  certificationsCount: number
+  ctfEventsCount: number
+  digitalBadgesCount: number
+  bugBountyProgramsCount: number
+  securityArticlesCount: number
+  osintCapabilitiesCount: number
 }
 
-export interface LinkedInProfile {
-  name: string
-  headline: string
-  summary: string
-  experience: LinkedInExperience[]
-  skills: LinkedInSkill[]
-  projects: LinkedInProject[]
+export interface IntegrationStatus {
+  platform: string
+  connected: boolean
+  last_synced?: string
+  error?: string
+  data_count?: number
 }
 
-export interface LinkedInExperience {
-  title: string
-  company: string
-  duration: string
-  description: string
-  skills?: string[]
-}
-
-export interface LinkedInSkill {
-  name: string
-  endorsements: number
-}
-
-export interface LinkedInProject {
-  name: string
-  description: string
-  url?: string
-  skills?: string[]
-  date?: string
+export interface AdminCredentials {
+  admin_username: string
+  admin_password_hash: string
 }
 
 export interface ImportSettings {
-  linkedinProfileUrl?: string
-  credlyUsername?: string
-  canvasApiKey?: string
-  autoImportEnabled: boolean
-  importFrequency: "daily" | "weekly" | "manual"
-  lastImport?: string
-  // CTF Platform Settings
-  ctftimeUsername?: string
-  picoctfUsername?: string
-  tryhackmeUsername?: string
-  hacktheboxUsername?: string
-  // Bug Bounty Platform Settings
-  hackeroneUsername?: string
-  hackeroneApiToken?: string
-  bugcrowdUsername?: string
-  // Blog Platform Settings
-  mediumUsername?: string
-  personalBlogRss?: string
-  devtoUsername?: string
+  credly_enabled: boolean
+  credly_auto_sync: boolean
+  credly_last_sync?: string
+  linkedin_enabled: boolean
+  linkedin_auto_sync: boolean
+  linkedin_last_sync?: string
+  github_enabled: boolean
+  github_auto_sync: boolean
+  github_last_sync?: string
+  hackerone_enabled: boolean
+  hackerone_auto_sync: boolean
+  hackerone_last_sync?: string
+  canvas_enabled: boolean
+  canvas_auto_sync: boolean
+  canvas_last_sync?: string
 }
 
-export interface CyberSecurityIntegration {
-  id: string
-  platform: string
-  username?: string
-  apiKey?: string
-  isConnected: boolean
-  lastSync?: string
-  syncEnabled: boolean
-  dataTypes: string[]
+export interface AdvancedSettings {
+  enable_rate_limiting: boolean
+  enable_security_headers: boolean
+  enable_content_security_policy: boolean
+  enable_xss_protection: boolean
+  enable_csrf_protection: boolean
+  enable_hsts: boolean
+  enable_referrer_policy: boolean
+  enable_feature_policy: boolean
+  enable_client_side_encryption: boolean
+  enable_server_side_encryption: boolean
+  data_retention_days: number
+  log_level: "debug" | "info" | "warn" | "error"
 }

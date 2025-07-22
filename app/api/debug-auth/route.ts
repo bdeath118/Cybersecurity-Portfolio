@@ -1,28 +1,24 @@
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  const debugInfo = {
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    supabase: {
-      url: "https://icustcymiynpwjfoogtc.supabase.co",
-      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    },
-    admin: {
-      hasUsername: !!process.env.ADMIN_USERNAME,
-      hasPassword: !!process.env.ADMIN_PASSWORD,
-      username: process.env.ADMIN_USERNAME || "admin (fallback)",
-    },
-    deployment: {
-      siteUrl: process.env.SITE_URL || process.env.VERCEL_URL || "localhost:3000",
-      vercelUrl: process.env.VERCEL_URL,
-    },
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.json({
+      adminUsername: process.env.ADMIN_USERNAME || "admin",
+      adminPassword: process.env.ADMIN_PASSWORD || "admin123", // Only expose in development
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "***SET***" : "***NOT SET***",
+      supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? "***SET***" : "***NOT SET***",
+      linkedinProfileUrl: process.env.LINKEDIN_PROFILE_URL,
+      credlyUsername: process.env.CREDLY_USERNAME,
+      githubUsername: process.env.GITHUB_USERNAME,
+      hackeroneUsername: process.env.HACKERONE_USERNAME,
+      tryhackmeUsername: process.env.TRYHACKME_USERNAME,
+      hacktheboxUsername: process.env.HACKTHEBOX_USERNAME,
+      canvasApiKey: process.env.CANVAS_API_KEY ? "***SET***" : "***NOT SET***",
+      canvasUserId: process.env.CANVAS_USER_ID,
+      // Add other relevant environment variables here, but mask sensitive ones
+    })
+  } else {
+    return NextResponse.json({ message: "Debug endpoint is only available in development mode." }, { status: 403 })
   }
-
-  return NextResponse.json(debugInfo, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
 }

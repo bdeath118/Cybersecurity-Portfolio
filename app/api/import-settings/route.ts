@@ -1,23 +1,33 @@
 import { NextResponse } from "next/server"
-import { getEnv } from "@/lib/env"
+import { isAuthenticated } from "@/lib/auth"
+import { getIntegrationStatus, updateIntegrationStatus } from "@/lib/data" // Assuming these are data functions
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!isAuthenticated(request)) {
+    return new NextResponse(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
+  }
   try {
-    const env = getEnv()
-
-    // Return current import settings
-    const settings = {
-      autoImportEnabled: false, // Default to false
-      importFrequency: "daily" as const,
-      linkedinProfileUrl: env.LINKEDIN_PROFILE_URL,
-      credlyUsername: env.CREDLY_USERNAME,
-      canvasApiKey: env.CANVAS_API_KEY ? "***configured***" : undefined,
-      lastImport: undefined,
-    }
-
-    return NextResponse.json(settings)
+    const status = await getIntegrationStatus()
+    return NextResponse.json(status)
   } catch (error) {
-    console.error("Error fetching import settings:", error)
-    return NextResponse.json({ error: "Failed to fetch import settings" }, { status: 500 })
+    console.error("API Error: Failed to fetch integration status:", error)
+    return new NextResponse(JSON.stringify({ error: "Failed to fetch integration status" }), { status: 500 })
+  }
+}
+
+export async function PUT(request: Request) {
+  if (!isAuthenticated(request)) {
+    return new NextResponse(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
+  }
+  try {
+    const { platform, updates } = await request.json()
+    if (!platform || !updates) {
+      return new NextResponse(JSON.stringify({ error: "Platform and updates are required" }), { status: 400 })
+    }
+    const updatedStatus = await updateIntegrationStatus(platform, updates)
+    return NextResponse.json(updatedStatus)
+  } catch (error) {
+    console.error("API Error: Failed to update integration status:", error)
+    return new NextResponse(JSON.stringify({ error: "Failed to update integration status" }), { status: 500 })
   }
 }

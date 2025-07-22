@@ -1,304 +1,199 @@
 "use client"
-
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { RefreshCw, CheckCircle, XCircle, AlertCircle, LogIn } from "lucide-react"
-import { updateImportSettings, triggerManualImport } from "@/lib/actions"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import type { ImportSettings } from "@/lib/types"
-import { useSearchParams } from "next/navigation"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { CheckCircle, XCircle, Loader2 } from "lucide-react"
+import { syncIntegrationData, testIntegration } from "@/lib/actions" // Assuming these are Server Actions
 
-export function ImportSettingsManager() {
-  const [settings, setSettings] = useState<ImportSettings>({
-    autoImportEnabled: false,
-    importFrequency: "daily",
-  })
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [credlyConnected, setCredlyConnected] = useState(false)
-  const [canvasConnected, setCanvasConnected] = useState(false)
-  const [linkedInConnected, setLinkedInConnected] = useState(false)
+interface ImportSettingsManagerProps {
+  initialIntegrationStatus: {
+    platform: string
+    enabled: boolean
+    last_synced: string | null
+    status: "idle" | "syncing" | "success" | "error"
+    message: string | null
+  }[]
+}
+
+export function ImportSettingsManager({ initialIntegrationStatus }: ImportSettingsManagerProps) {
+  const [integrationStatus, setIntegrationStatus] = useState(initialIntegrationStatus)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [testResults, setTestResults] = useState<{ platform: string; success: boolean; message: string } | null>(null)
   const { toast } = useToast()
-  const searchParams = useSearchParams()
 
-  useEffect(() => {
-    // Check for success or error messages in URL
-    const success = searchParams.get("success")
-    const error = searchParams.get("error")
-
-    if (success) {
-      if (success === "credly_connected") {
-        setCredlyConnected(true)
-        toast({
-          title: "Success",
-          description: "Successfully connected to Credly",
-        })
-      } else if (success === "canvas_connected") {
-        setCanvasConnected(true)
-        toast({
-          title: "Success",
-          description: "Successfully connected to Canvas",
-        })
-      } else if (success === "linkedin_connected") {
-        setLinkedInConnected(true)
-        toast({
-          title: "Success",
-          description: "Successfully connected to LinkedIn",
-        })
-      }
-    }
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to connect. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }, [searchParams, toast])
-
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const response = await fetch("/api/import-settings")
-        const data = await response.json()
-        setSettings(data)
-
-        // Check connection status
-        const credlyResponse = await fetch("/api/auth/credly/status")
-        const credlyData = await credlyResponse.json()
-        setCredlyConnected(credlyData.connected)
-
-        const canvasResponse = await fetch("/api/auth/canvas/status")
-        const canvasData = await canvasResponse.json()
-        setCanvasConnected(canvasData.connected)
-
-        const linkedInResponse = await fetch("/api/auth/linkedin/status")
-        const linkedInData = await linkedInResponse.json()
-        setLinkedInConnected(linkedInData.connected)
-      } catch (error) {
-        console.error("Error fetching import settings:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchSettings()
-  }, [])
-
-  async function handleSaveSettings(formData: FormData) {
-    setSaving(true)
+  const handleSync = async (platform: string) => {
+    setIsSyncing(true)
+    setIntegrationStatus((prev) =>
+      prev.map((s) => (s.platform === platform ? { ...s, status: "syncing", message: "Syncing..." } : s)),
+    )
     try {
-      const result = await updateImportSettings(formData)
+      const result = await syncIntegrationData(platform)
       if (result.success) {
-        setSettings(result.settings)
-        toast({
-          title: "Success",
-          description: "Import settings updated successfully",
-        })
+        setIntegrationStatus((prev) =>
+          prev.map((s) =>
+            s.platform === platform
+              ? { ...s, status: "success", message: result.message, last_synced: new Date().toISOString() }
+              : s,
+          ),
+        )
+        toast({ title: "Sync Successful", description: result.message })
+      } else {
+        setIntegrationStatus((prev) =>
+          prev.map((s) => (s.platform === platform ? { ...s, status: "error", message: result.message } : s)),
+        )
+        toast({ title: "Sync Failed", description: result.message, variant: "destructive" })
       }
-    } catch (error) {
-      console.error("Error updating settings:", error)
+    } catch (error: any) {
+      setIntegrationStatus((prev) =>
+        prev.map((s) =>
+          s.platform === platform
+            ? { ...s, status: "error", message: `An unexpected error occurred: ${error.message}` }
+            : s,
+        ),
+      )
       toast({
-        title: "Error",
-        description: "Failed to update import settings",
+        title: "Sync Error",
+        description: `An unexpected error occurred: ${error.message}`,
         variant: "destructive",
       })
     } finally {
-      setSaving(false)
+      setIsSyncing(false)
     }
   }
 
-  async function handleManualImport() {
-    setImporting(true)
+  const handleTestIntegration = async (platform: string) => {
+    setTestResults({ platform, success: false, message: "Testing..." })
     try {
-      const result = await triggerManualImport()
+      const result = await testIntegration(platform)
+      setTestResults({ platform, success: result.success, message: result.message })
       if (result.success) {
-        toast({
-          title: "Success",
-          description: `Import completed. ${result.imported} items imported.`,
-        })
+        toast({ title: "Test Successful", description: result.message })
+      } else {
+        toast({ title: "Test Failed", description: result.message, variant: "destructive" })
       }
-    } catch (error) {
-      console.error("Error during manual import:", error)
+    } catch (error: any) {
+      setTestResults({ platform, success: false, message: `An unexpected error occurred: ${error.message}` })
       toast({
-        title: "Error",
-        description: "Failed to import data",
+        title: "Test Error",
+        description: `An unexpected error occurred: ${error.message}`,
         variant: "destructive",
       })
-    } finally {
-      setImporting(false)
     }
-  }
-
-  if (loading) {
-    return <div className="text-center py-8">Loading import settings...</div>
   }
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Auto Import Settings</CardTitle>
-        <CardDescription>
-          Configure automatic importing of projects, skills, and badges from external platforms
-        </CardDescription>
+        <CardTitle>Integration & Import Settings</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <form action={handleSaveSettings} className="space-y-6">
-          {/* LinkedIn Integration */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium">LinkedIn Integration</h3>
-                <p className="text-sm text-muted-foreground">Import projects and skills from your LinkedIn profile</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {linkedInConnected ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href="/api/auth/linkedin/login">
-                      <LogIn className="h-4 w-4 mr-2" />
-                      Connect LinkedIn
-                    </a>
-                  </Button>
-                )}
-                <Switch name="linkedinEnabled" defaultChecked={settings.autoImportEnabled} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="importFrequency">Import Frequency</Label>
-                <Select name="importFrequency" defaultValue={settings.importFrequency}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="manual">Manual Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Badge Platforms */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">Digital Badge Platforms</h3>
-              <p className="text-sm text-muted-foreground">
-                Import digital badges from various certification platforms
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="credlyConnection">Credly</Label>
-                <div className="flex items-center gap-2">
-                  {credlyConnected ? (
-                    <>
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-sm">Connected</span>
-                    </>
-                  ) : (
-                    <Button variant="outline" size="sm" asChild className="w-full">
-                      <a href="/api/auth/credly/login">
-                        <LogIn className="h-4 w-4 mr-2" />
-                        Connect Credly Account
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="canvasConnection">Canvas</Label>
-                <div className="flex items-center gap-2">
-                  {canvasConnected ? (
-                    <>
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-sm">Connected</span>
-                    </>
-                  ) : (
-                    <Button variant="outline" size="sm" asChild className="w-full">
-                      <a href="/api/auth/canvas/login">
-                        <LogIn className="h-4 w-4 mr-2" />
-                        Connect Canvas Account
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Import Status */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">Import Status</h3>
-              <p className="text-sm text-muted-foreground">Current status and last import information</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-2">
-                {linkedInConnected ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-yellow-500" />
-                )}
-                <div>
-                  <p className="text-sm font-medium">LinkedIn</p>
-                  <p className="text-xs text-muted-foreground">
-                    {settings.lastImport ? `Last: ${settings.lastImport}` : "Never imported"}
+      <CardContent>
+        <p className="text-sm text-gray-500 mb-4">
+          Manage and synchronize data from external platforms like Credly, LinkedIn, GitHub, and HackerOne.
+        </p>
+        <div className="space-y-6">
+          {integrationStatus.map((integration) => (
+            <div
+              key={integration.platform}
+              className="border rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+            >
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold capitalize">{integration.platform}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Status:{" "}
+                  <span
+                    className={`font-medium ${
+                      integration.status === "success"
+                        ? "text-green-600"
+                        : integration.status === "error"
+                          ? "text-red-600"
+                          : "text-yellow-600"
+                    }`}
+                  >
+                    {integration.status}
+                  </span>
+                </p>
+                {integration.last_synced && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Last Synced: {new Date(integration.last_synced).toLocaleString()}
                   </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {credlyConnected ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-yellow-500" />
                 )}
-                <div>
-                  <p className="text-sm font-medium">Credly</p>
-                  <p className="text-xs text-muted-foreground">{credlyConnected ? "Connected" : "Not connected"}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {canvasConnected ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <XCircle className="h-5 w-5 text-red-500" />
+                {integration.message && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Message: {integration.message}</p>
                 )}
-                <div>
-                  <p className="text-sm font-medium">Canvas</p>
-                  <p className="text-xs text-muted-foreground">{canvasConnected ? "Connected" : "Not connected"}</p>
-                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={() => handleSync(integration.platform)}
+                  disabled={isSyncing || !integration.enabled}
+                  className="w-full sm:w-auto"
+                >
+                  {isSyncing && integration.status === "syncing" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                  )}
+                  Sync Now
+                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={() => setTestResults(null)} // Clear previous results
+                      className="w-full sm:w-auto"
+                    >
+                      Test Connection
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Test {integration.platform} Connection</DialogTitle>
+                      <DialogDescription>
+                        This will attempt to connect to the {integration.platform} API using your configured
+                        credentials.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <Button
+                        onClick={() => handleTestIntegration(integration.platform)}
+                        disabled={testResults?.message === "Testing..."}
+                      >
+                        {testResults?.message === "Testing..." ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          "Run Test"
+                        )}
+                      </Button>
+                      {testResults && testResults.platform === integration.platform && (
+                        <div
+                          className={`mt-4 p-3 rounded-md ${testResults.success ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {testResults.success ? (
+                              <CheckCircle className="h-5 w-5" />
+                            ) : (
+                              <XCircle className="h-5 w-5" />
+                            )}
+                            <p className="font-medium">{testResults.success ? "Test Succeeded!" : "Test Failed!"}</p>
+                          </div>
+                          <p className="text-sm mt-1">{testResults.message}</p>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
-          </div>
-
-          <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={handleManualImport} disabled={importing}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${importing ? "animate-spin" : ""}`} />
-              {importing ? "Importing..." : "Manual Import"}
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save Settings"}
-            </Button>
-          </div>
-        </form>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )

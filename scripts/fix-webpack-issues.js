@@ -1,37 +1,12 @@
 const fs = require("fs")
 const { execSync } = require("child_process")
 
-console.log("🔧 Fixing webpack build issues...\n")
+console.log("🔧 Reviewing and fixing webpack build issues...\n")
 
-// 1. Fix package.json dependencies
-console.log("📦 Updating package.json with stable versions...")
-if (fs.existsSync("package-fixed.json")) {
-  fs.copyFileSync("package-fixed.json", "package.json")
-  console.log("✅ Package.json updated with stable versions")
-}
+// This script assumes the latest package.json, eslint.config.js, tsconfig.json, and next.config.mjs
+// are already provided in the project structure. Its primary role is to clean and reinstall dependencies.
 
-// 2. Fix ESLint configuration
-console.log("🔧 Fixing ESLint configuration...")
-if (fs.existsSync("eslint.config.fixed.js")) {
-  fs.copyFileSync("eslint.config.fixed.js", "eslint.config.js")
-  console.log("✅ ESLint config fixed")
-}
-
-// 3. Fix TypeScript configuration
-console.log("📝 Updating TypeScript configuration...")
-if (fs.existsSync("tsconfig.fixed.json")) {
-  fs.copyFileSync("tsconfig.fixed.json", "tsconfig.json")
-  console.log("✅ TypeScript config updated")
-}
-
-// 4. Fix Next.js configuration
-console.log("⚙️ Updating Next.js configuration...")
-if (fs.existsSync("next.config.fixed.mjs")) {
-  fs.copyFileSync("next.config.fixed.mjs", "next.config.mjs")
-  console.log("✅ Next.js config updated")
-}
-
-// 5. Clean and reinstall dependencies
+// 1. Clean and reinstall dependencies
 console.log("🧹 Cleaning dependencies...")
 try {
   if (fs.existsSync("node_modules")) {
@@ -44,11 +19,13 @@ try {
     execSync("rm -rf .next", { stdio: "inherit" })
   }
 
-  console.log("📥 Installing fixed dependencies...")
+  console.log("📥 Installing updated dependencies...")
   execSync("npm install", { stdio: "inherit" })
   console.log("✅ Dependencies installed successfully")
 } catch (error) {
   console.error("❌ Error during dependency installation:", error.message)
 }
 
-console.log("\n🎉 Webpack issues fixed! Try building again.")
+console.log(
+  "\n🎉 Dependency and configuration review complete. Please ensure the provided files are in place and try building again.",
+)

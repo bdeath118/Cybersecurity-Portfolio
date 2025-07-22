@@ -1,357 +1,243 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Plus, Pencil, Trash2, Award } from "lucide-react"
-import type { Certification } from "@/lib/types"
-import { createCertification, editCertification, removeCertification } from "@/lib/actions"
+import { PlusCircle, Trash2, Edit, Save, XCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import Image from "next/image"
+import type { Certification } from "@/lib/types"
+import { addCertification, updateCertification, deleteCertification } from "@/lib/data" // Assuming these are Server Actions or API calls
 
-export function CertificationsManager() {
-  const [certifications, setCertifications] = useState<Certification[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedCertification, setSelectedCertification] = useState<Certification | null>(null)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+interface CertificationsManagerProps {
+  initialCertifications: Certification[]
+}
+
+export function CertificationsManager({ initialCertifications }: CertificationsManagerProps) {
+  const [certifications, setCertifications] = useState<Certification[]>(initialCertifications)
+  const [editingCertification, setEditingCertification] = useState<Certification | null>(null)
+  const [newCertification, setNewCertification] = useState<Omit<Certification, "id"> | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
-    async function fetchCertifications() {
+    setCertifications(initialCertifications)
+  }, [initialCertifications])
+
+  const handleAddCertification = async () => {
+    if (newCertification) {
       try {
-        const response = await fetch("/api/certifications")
-        const data = await response.json()
-        setCertifications(data)
-      } catch (error) {
-        console.error("Error fetching certifications:", error)
+        const addedCert = await addCertification(newCertification)
+        setCertifications((prev) => [...prev, addedCert])
+        setNewCertification(null)
+        toast({ title: "Success", description: "Certification added successfully." })
+      } catch (error: any) {
         toast({
           title: "Error",
-          description: "Failed to load certifications",
+          description: `Failed to add certification: ${error.message || "Unknown error"}`,
           variant: "destructive",
         })
-      } finally {
-        setLoading(false)
       }
     }
+  }
 
-    fetchCertifications()
-  }, [toast])
-
-  async function handleAddCertification(formData: FormData) {
-    try {
-      const result = await createCertification(formData)
-
-      if (result.success) {
-        setCertifications([...certifications, result.certification])
-        setIsAddDialogOpen(false)
+  const handleUpdateCertification = async () => {
+    if (editingCertification) {
+      try {
+        const updatedCert = await updateCertification(editingCertification.id, editingCertification)
+        setCertifications((prev) => prev.map((c) => (c.id === updatedCert.id ? updatedCert : c)))
+        setEditingCertification(null)
+        toast({ title: "Success", description: "Certification updated successfully." })
+      } catch (error: any) {
         toast({
-          title: "Success",
-          description: "Certification added successfully",
+          title: "Error",
+          description: `Failed to update certification: ${error.message || "Unknown error"}`,
+          variant: "destructive",
         })
       }
-    } catch (error) {
-      console.error("Error adding certification:", error)
+    }
+  }
+
+  const handleDeleteCertification = async (id: string) => {
+    try {
+      await deleteCertification(id)
+      setCertifications((prev) => prev.filter((c) => c.id !== id))
+      toast({ title: "Success", description: "Certification deleted successfully." })
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to add certification",
+        description: `Failed to delete certification: ${error.message || "Unknown error"}`,
         variant: "destructive",
       })
     }
   }
 
-  async function handleEditCertification(formData: FormData) {
-    if (!selectedCertification) return
-
-    try {
-      const result = await editCertification(selectedCertification.id, formData)
-
-      if (result.success) {
-        setCertifications(certifications.map((c) => (c.id === selectedCertification.id ? result.certification : c)))
-        setIsEditDialogOpen(false)
-        setSelectedCertification(null)
-        toast({
-          title: "Success",
-          description: "Certification updated successfully",
-        })
-      }
-    } catch (error) {
-      console.error("Error updating certification:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update certification",
-        variant: "destructive",
-      })
-    }
-  }
-
-  async function handleDeleteCertification() {
-    if (!selectedCertification) return
-
-    try {
-      const result = await removeCertification(selectedCertification.id)
-
-      if (result.success) {
-        setCertifications(certifications.filter((c) => c.id !== selectedCertification.id))
-        setIsDeleteDialogOpen(false)
-        setSelectedCertification(null)
-        toast({
-          title: "Success",
-          description: "Certification deleted successfully",
-        })
-      }
-    } catch (error) {
-      console.error("Error deleting certification:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete certification",
-        variant: "destructive",
-      })
-    }
-  }
-
-  if (loading) {
-    return <div className="text-center py-8">Loading certifications...</div>
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Certifications</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Certification
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New Certification</DialogTitle>
-              <DialogDescription>Add a new certification to showcase in your portfolio</DialogDescription>
-            </DialogHeader>
-            <form action={handleAddCertification} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Certification Name</Label>
-                  <Input id="name" name="name" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="issuer">Issuing Organization</Label>
-                  <Input id="issuer" name="issuer" required />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Issue Date</Label>
-                  <Input id="date" name="date" type="date" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="expiryDate">Expiry Date (if applicable)</Label>
-                  <Input id="expiryDate" name="expiryDate" type="date" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" name="description" rows={3} required />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="logo">Logo URL</Label>
-                  <Input id="logo" name="logo" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="credentialUrl">Credential URL</Label>
-                  <Input id="credentialUrl" name="credentialUrl" />
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button type="submit">Add Certification</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+  const renderCertificationForm = (cert: Omit<Certification, "id"> | Certification, isNew: boolean) => (
+    <div className="grid gap-4">
+      <div>
+        <Label htmlFor={isNew ? "new-name" : `name-${cert.id}`}>Name</Label>
+        <Input
+          id={isNew ? "new-name" : `name-${cert.id}`}
+          value={cert.name}
+          onChange={(e) =>
+            isNew
+              ? setNewCertification({ ...newCertification!, name: e.target.value })
+              : setEditingCertification({ ...editingCertification!, name: e.target.value })
+          }
+        />
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {certifications.length === 0 ? (
-          <div className="col-span-full text-center py-8 text-muted-foreground">
-            No certifications found. Add your first certification to get started.
-          </div>
-        ) : (
-          certifications.map((cert) => (
-            <Card key={cert.id}>
-              <CardHeader className="flex flex-row items-center gap-4">
-                {cert.logo ? (
-                  <Image
-                    src={cert.logo || "/placeholder.svg"}
-                    alt={cert.name}
-                    width={48}
-                    height={48}
-                    className="rounded-md"
-                  />
-                ) : (
-                  <div className="p-2 bg-primary/10 rounded-full">
-                    <Award className="h-8 w-8 text-primary" />
-                  </div>
-                )}
-                <div>
-                  <CardTitle className="text-lg">{cert.name}</CardTitle>
-                  <CardDescription>{cert.issuer}</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Issued: {cert.date}</span>
-                    {cert.expiryDate && <span>Expires: {cert.expiryDate}</span>}
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{cert.description}</p>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Dialog
-                  open={isEditDialogOpen && selectedCertification?.id === cert.id}
-                  onOpenChange={(open) => {
-                    setIsEditDialogOpen(open)
-                    if (!open) setSelectedCertification(null)
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => setSelectedCertification(cert)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Edit Certification</DialogTitle>
-                      <DialogDescription>Update the details of your certification</DialogDescription>
-                    </DialogHeader>
-                    <form action={handleEditCertification} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-name">Certification Name</Label>
-                          <Input id="edit-name" name="name" defaultValue={selectedCertification?.name} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-issuer">Issuing Organization</Label>
-                          <Input id="edit-issuer" name="issuer" defaultValue={selectedCertification?.issuer} required />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-date">Issue Date</Label>
-                          <Input
-                            id="edit-date"
-                            name="date"
-                            type="date"
-                            defaultValue={selectedCertification?.date}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-expiryDate">Expiry Date (if applicable)</Label>
-                          <Input
-                            id="edit-expiryDate"
-                            name="expiryDate"
-                            type="date"
-                            defaultValue={selectedCertification?.expiryDate}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-description">Description</Label>
-                        <Textarea
-                          id="edit-description"
-                          name="description"
-                          rows={3}
-                          defaultValue={selectedCertification?.description}
-                          required
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-logo">Logo URL</Label>
-                          <Input id="edit-logo" name="logo" defaultValue={selectedCertification?.logo} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-credentialUrl">Credential URL</Label>
-                          <Input
-                            id="edit-credentialUrl"
-                            name="credentialUrl"
-                            defaultValue={selectedCertification?.credentialUrl}
-                          />
-                        </div>
-                      </div>
-
-                      <DialogFooter>
-                        <Button type="submit">Update Certification</Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-
-                <AlertDialog
-                  open={isDeleteDialogOpen && selectedCertification?.id === cert.id}
-                  onOpenChange={(open) => {
-                    setIsDeleteDialogOpen(open)
-                    if (!open) setSelectedCertification(null)
-                  }}
-                >
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" onClick={() => setSelectedCertification(cert)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Certification</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this certification? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteCertification}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardFooter>
-            </Card>
-          ))
-        )}
+      <div>
+        <Label htmlFor={isNew ? "new-issuer" : `issuer-${cert.id}`}>Issuer</Label>
+        <Input
+          id={isNew ? "new-issuer" : `issuer-${cert.id}`}
+          value={cert.issuer}
+          onChange={(e) =>
+            isNew
+              ? setNewCertification({ ...newCertification!, issuer: e.target.value })
+              : setEditingCertification({ ...editingCertification!, issuer: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-issue-date" : `issue-date-${cert.id}`}>Issue Date</Label>
+        <Input
+          id={isNew ? "new-issue-date" : `issue-date-${cert.id}`}
+          type="date"
+          value={cert.issue_date || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCertification({ ...newCertification!, issue_date: e.target.value })
+              : setEditingCertification({ ...editingCertification!, issue_date: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-expiration-date" : `expiration-date-${cert.id}`}>Expiration Date</Label>
+        <Input
+          id={isNew ? "new-expiration-date" : `expiration-date-${cert.id}`}
+          type="date"
+          value={cert.expiration_date || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCertification({ ...newCertification!, expiration_date: e.target.value })
+              : setEditingCertification({ ...editingCertification!, expiration_date: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-credential-id" : `credential-id-${cert.id}`}>Credential ID</Label>
+        <Input
+          id={isNew ? "new-credential-id" : `credential-id-${cert.id}`}
+          value={cert.credential_id || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCertification({ ...newCertification!, credential_id: e.target.value })
+              : setEditingCertification({ ...editingCertification!, credential_id: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-credential-url" : `credential-url-${cert.id}`}>Credential URL</Label>
+        <Input
+          id={isNew ? "new-credential-url" : `credential-url-${cert.id}`}
+          value={cert.credential_url || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCertification({ ...newCertification!, credential_url: e.target.value })
+              : setEditingCertification({ ...editingCertification!, credential_url: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-image-url" : `image-url-${cert.id}`}>Image URL</Label>
+        <Input
+          id={isNew ? "new-image-url" : `image-url-${cert.id}`}
+          value={cert.image_url || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCertification({ ...newCertification!, image_url: e.target.value })
+              : setEditingCertification({ ...editingCertification!, image_url: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-category" : `category-${cert.id}`}>Category</Label>
+        <Input
+          id={isNew ? "new-category" : `category-${cert.id}`}
+          value={cert.category || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCertification({ ...newCertification!, category: e.target.value })
+              : setEditingCertification({ ...editingCertification!, category: e.target.value })
+          }
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => (isNew ? setNewCertification(null) : setEditingCertification(null))}>
+          <XCircle className="mr-2 h-4 w-4" /> Cancel
+        </Button>
+        <Button onClick={isNew ? handleAddCertification : handleUpdateCertification}>
+          <Save className="mr-2 h-4 w-4" /> {isNew ? "Add Certification" : "Save Changes"}
+        </Button>
       </div>
     </div>
+  )
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Manage Certifications</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {newCertification ? (
+            <Card className="p-4 border-dashed">
+              <CardTitle className="mb-4">Add New Certification</CardTitle>
+              {renderCertificationForm(newCertification, true)}
+            </Card>
+          ) : (
+            <Button
+              onClick={() =>
+                setNewCertification({
+                  name: "",
+                  issuer: "",
+                  issue_date: "",
+                  expiration_date: "",
+                  credential_id: "",
+                  credential_url: "",
+                  image_url: "",
+                  category: "",
+                })
+              }
+              className="w-full"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New Certification
+            </Button>
+          )}
+
+          <div className="grid gap-4">
+            {certifications.map((cert) => (
+              <Card key={cert.id} className="p-4">
+                {editingCertification?.id === cert.id ? (
+                  renderCertificationForm(editingCertification, false)
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-semibold">{cert.name}</h3>
+                    <p className="text-sm text-gray-500">{cert.issuer}</p>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditingCertification({ ...cert })}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteCertification(cert.id)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

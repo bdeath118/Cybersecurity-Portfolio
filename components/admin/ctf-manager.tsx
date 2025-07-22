@@ -1,396 +1,258 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Plus, Pencil, Trash2, Flag, Trophy, Users } from "lucide-react"
-import type { CTFEvent } from "@/lib/types"
-import { createCTFEvent, editCTFEvent, removeCTFEvent } from "@/lib/actions"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { PlusCircle, Trash2, Edit, Save, XCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import type { CTFEvent } from "@/lib/types"
+import { addCTFEvent, updateCTFEvent, deleteCTFEvent } from "@/lib/data" // Assuming these are Server Actions or API calls
 
-export function CTFManager() {
-  const [ctfEvents, setCTFEvents] = useState<CTFEvent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedEvent, setSelectedEvent] = useState<CTFEvent | null>(null)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+interface CTFManagerProps {
+  initialCTFEvents: CTFEvent[]
+}
+
+export function CTFManager({ initialCTFEvents }: CTFManagerProps) {
+  const [ctfEvents, setCTFEvents] = useState<CTFEvent[]>(initialCTFEvents)
+  const [editingCTFEvent, setEditingCTFEvent] = useState<CTFEvent | null>(null)
+  const [newCTFEvent, setNewCTFEvent] = useState<Omit<CTFEvent, "id"> | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
-    async function fetchCTFEvents() {
+    setCTFEvents(initialCTFEvents)
+  }, [initialCTFEvents])
+
+  const handleAddCTFEvent = async () => {
+    if (newCTFEvent) {
       try {
-        const response = await fetch("/api/ctf-events")
-        const data = await response.json()
-        setCTFEvents(data)
-      } catch (error) {
-        console.error("Error fetching CTF events:", error)
+        const addedEvent = await addCTFEvent(newCTFEvent)
+        setCTFEvents((prev) => [...prev, addedEvent])
+        setNewCTFEvent(null)
+        toast({ title: "Success", description: "CTF Event added successfully." })
+      } catch (error: any) {
         toast({
           title: "Error",
-          description: "Failed to load CTF events",
+          description: `Failed to add CTF Event: ${error.message || "Unknown error"}`,
           variant: "destructive",
         })
-      } finally {
-        setLoading(false)
       }
     }
+  }
 
-    fetchCTFEvents()
-  }, [toast])
-
-  async function handleAddCTFEvent(formData: FormData) {
-    try {
-      const result = await createCTFEvent(formData)
-
-      if (result.success) {
-        setCTFEvents([...ctfEvents, result.event])
-        setIsAddDialogOpen(false)
+  const handleUpdateCTFEvent = async () => {
+    if (editingCTFEvent) {
+      try {
+        const updatedEvent = await updateCTFEvent(editingCTFEvent.id, editingCTFEvent)
+        setCTFEvents((prev) => prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)))
+        setEditingCTFEvent(null)
+        toast({ title: "Success", description: "CTF Event updated successfully." })
+      } catch (error: any) {
         toast({
-          title: "Success",
-          description: "CTF event added successfully",
+          title: "Error",
+          description: `Failed to update CTF Event: ${error.message || "Unknown error"}`,
+          variant: "destructive",
         })
       }
-    } catch (error) {
-      console.error("Error adding CTF event:", error)
+    }
+  }
+
+  const handleDeleteCTFEvent = async (id: string) => {
+    try {
+      await deleteCTFEvent(id)
+      setCTFEvents((prev) => prev.filter((e) => e.id !== id))
+      toast({ title: "Success", description: "CTF Event deleted successfully." })
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to add CTF event",
+        description: `Failed to delete CTF Event: ${error.message || "Unknown error"}`,
         variant: "destructive",
       })
     }
   }
 
-  async function handleEditCTFEvent(formData: FormData) {
-    if (!selectedEvent) return
-
-    try {
-      const result = await editCTFEvent(selectedEvent.id, formData)
-
-      if (result.success) {
-        setCTFEvents(ctfEvents.map((e) => (e.id === selectedEvent.id ? result.event : e)))
-        setIsEditDialogOpen(false)
-        setSelectedEvent(null)
-        toast({
-          title: "Success",
-          description: "CTF event updated successfully",
-        })
-      }
-    } catch (error) {
-      console.error("Error updating CTF event:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update CTF event",
-        variant: "destructive",
-      })
-    }
-  }
-
-  async function handleDeleteCTFEvent() {
-    if (!selectedEvent) return
-
-    try {
-      const result = await removeCTFEvent(selectedEvent.id)
-
-      if (result.success) {
-        setCTFEvents(ctfEvents.filter((e) => e.id !== selectedEvent.id))
-        setIsDeleteDialogOpen(false)
-        setSelectedEvent(null)
-        toast({
-          title: "Success",
-          description: "CTF event deleted successfully",
-        })
-      }
-    } catch (error) {
-      console.error("Error deleting CTF event:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete CTF event",
-        variant: "destructive",
-      })
-    }
-  }
-
-  if (loading) {
-    return <div className="text-center py-8">Loading CTF events...</div>
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">CTF Events</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add CTF Event
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New CTF Event</DialogTitle>
-              <DialogDescription>Add a new Capture The Flag event to showcase in your portfolio</DialogDescription>
-            </DialogHeader>
-            <form action={handleAddCTFEvent} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Event Name</Label>
-                  <Input id="name" name="name" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <Input id="date" name="date" type="date" required />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="difficulty">Difficulty</Label>
-                  <Select name="difficulty" defaultValue="Medium">
-                    <SelectTrigger id="difficulty">
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Easy">Easy</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Hard">Hard</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="team">Team Name</Label>
-                  <Input id="team" name="team" required />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="rank">Rank</Label>
-                  <Input id="rank" name="rank" type="number" min="1" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="totalTeams">Total Teams</Label>
-                  <Input id="totalTeams" name="totalTeams" type="number" min="1" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="flagsCaptured">Flags Captured</Label>
-                  <Input id="flagsCaptured" name="flagsCaptured" type="number" min="0" required />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" name="description" rows={3} />
-              </div>
-
-              <DialogFooter>
-                <Button type="submit">Add CTF Event</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+  const renderCTFEventForm = (event: Omit<CTFEvent, "id"> | CTFEvent, isNew: boolean) => (
+    <div className="grid gap-4">
+      <div>
+        <Label htmlFor={isNew ? "new-name" : `name-${event.id}`}>Name</Label>
+        <Input
+          id={isNew ? "new-name" : `name-${event.id}`}
+          value={event.name}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, name: e.target.value })
+              : setEditingCTFEvent({ ...editingCTFEvent!, name: e.target.value })
+          }
+        />
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {ctfEvents.length === 0 ? (
-          <div className="col-span-full text-center py-8 text-muted-foreground">
-            No CTF events found. Add your first event to get started.
-          </div>
-        ) : (
-          ctfEvents.map((event) => (
-            <Card key={event.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle>{event.name}</CardTitle>
-                  <Badge
-                    variant={
-                      event.difficulty === "Easy"
-                        ? "outline"
-                        : event.difficulty === "Medium"
-                          ? "secondary"
-                          : "destructive"
-                    }
-                  >
-                    {event.difficulty}
-                  </Badge>
-                </div>
-                <CardDescription>{event.date}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Team: {event.team}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      Rank: {event.rank} of {event.totalTeams}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Flag className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Flags Captured: {event.flagsCaptured}</span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Dialog
-                  open={isEditDialogOpen && selectedEvent?.id === event.id}
-                  onOpenChange={(open) => {
-                    setIsEditDialogOpen(open)
-                    if (!open) setSelectedEvent(null)
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => setSelectedEvent(event)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Edit CTF Event</DialogTitle>
-                      <DialogDescription>Update the details of your CTF event</DialogDescription>
-                    </DialogHeader>
-                    <form action={handleEditCTFEvent} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-name">Event Name</Label>
-                          <Input id="edit-name" name="name" defaultValue={selectedEvent?.name} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-date">Date</Label>
-                          <Input id="edit-date" name="date" type="date" defaultValue={selectedEvent?.date} required />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-difficulty">Difficulty</Label>
-                          <Select name="difficulty" defaultValue={selectedEvent?.difficulty}>
-                            <SelectTrigger id="edit-difficulty">
-                              <SelectValue placeholder="Select difficulty" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Easy">Easy</SelectItem>
-                              <SelectItem value="Medium">Medium</SelectItem>
-                              <SelectItem value="Hard">Hard</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-team">Team Name</Label>
-                          <Input id="edit-team" name="team" defaultValue={selectedEvent?.team} required />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-rank">Rank</Label>
-                          <Input
-                            id="edit-rank"
-                            name="rank"
-                            type="number"
-                            min="1"
-                            defaultValue={selectedEvent?.rank}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-totalTeams">Total Teams</Label>
-                          <Input
-                            id="edit-totalTeams"
-                            name="totalTeams"
-                            type="number"
-                            min="1"
-                            defaultValue={selectedEvent?.totalTeams}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-flagsCaptured">Flags Captured</Label>
-                          <Input
-                            id="edit-flagsCaptured"
-                            name="flagsCaptured"
-                            type="number"
-                            min="0"
-                            defaultValue={selectedEvent?.flagsCaptured}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-description">Description</Label>
-                        <Textarea
-                          id="edit-description"
-                          name="description"
-                          rows={3}
-                          defaultValue={selectedEvent?.description}
-                        />
-                      </div>
-
-                      <DialogFooter>
-                        <Button type="submit">Update CTF Event</Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-
-                <AlertDialog
-                  open={isDeleteDialogOpen && selectedEvent?.id === event.id}
-                  onOpenChange={(open) => {
-                    setIsDeleteDialogOpen(open)
-                    if (!open) setSelectedEvent(null)
-                  }}
-                >
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" onClick={() => setSelectedEvent(event)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete CTF Event</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this CTF event? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteCTFEvent}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardFooter>
-            </Card>
-          ))
-        )}
+      <div>
+        <Label htmlFor={isNew ? "new-platform" : `platform-${event.id}`}>Platform</Label>
+        <Input
+          id={isNew ? "new-platform" : `platform-${event.id}`}
+          value={event.platform}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, platform: e.target.value })
+              : setEditingCTFEvent({ ...editingCTFEvent!, platform: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-date" : `date-${event.id}`}>Date</Label>
+        <Input
+          id={isNew ? "new-date" : `date-${event.id}`}
+          type="date"
+          value={event.date || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, date: e.target.value })
+              : setEditingCTFEvent({ ...editingCTFEvent!, date: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-rank" : `rank-${event.id}`}>Rank</Label>
+        <Input
+          id={isNew ? "new-rank" : `rank-${event.id}`}
+          value={event.rank || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, rank: e.target.value })
+              : setEditingCTFEvent({ ...editingCTFEvent!, rank: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-score" : `score-${event.id}`}>Score</Label>
+        <Input
+          id={isNew ? "new-score" : `score-${event.id}`}
+          type="number"
+          value={event.score || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, score: Number.parseInt(e.target.value) || 0 })
+              : setEditingCTFEvent({ ...editingCTFEvent!, score: Number.parseInt(e.target.value) || 0 })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-challenges-solved" : `challenges-solved-${event.id}`}>Challenges Solved</Label>
+        <Input
+          id={isNew ? "new-challenges-solved" : `challenges-solved-${event.id}`}
+          type="number"
+          value={event.challenges_solved || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, challenges_solved: Number.parseInt(e.target.value) || 0 })
+              : setEditingCTFEvent({ ...editingCTFEvent!, challenges_solved: Number.parseInt(e.target.value) || 0 })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-description" : `description-${event.id}`}>Description</Label>
+        <Textarea
+          id={isNew ? "new-description" : `description-${event.id}`}
+          value={event.description || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, description: e.target.value })
+              : setEditingCTFEvent({ ...editingCTFEvent!, description: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-url" : `url-${event.id}`}>URL</Label>
+        <Input
+          id={isNew ? "new-url" : `url-${event.id}`}
+          value={event.url || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, url: e.target.value })
+              : setEditingCTFEvent({ ...editingCTFEvent!, url: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-image-url" : `image-url-${event.id}`}>Image URL</Label>
+        <Input
+          id={isNew ? "new-image-url" : `image-url-${event.id}`}
+          value={event.image_url || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewCTFEvent({ ...newCTFEvent!, image_url: e.target.value })
+              : setEditingCTFEvent({ ...editingCTFEvent!, image_url: e.target.value })
+          }
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => (isNew ? setNewCTFEvent(null) : setEditingCTFEvent(null))}>
+          <XCircle className="mr-2 h-4 w-4" /> Cancel
+        </Button>
+        <Button onClick={isNew ? handleAddCTFEvent : handleUpdateCTFEvent}>
+          <Save className="mr-2 h-4 w-4" /> {isNew ? "Add CTF Event" : "Save Changes"}
+        </Button>
       </div>
     </div>
+  )
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Manage CTF Events</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {newCTFEvent ? (
+            <Card className="p-4 border-dashed">
+              <CardTitle className="mb-4">Add New CTF Event</CardTitle>
+              {renderCTFEventForm(newCTFEvent, true)}
+            </Card>
+          ) : (
+            <Button
+              onClick={() =>
+                setNewCTFEvent({
+                  name: "",
+                  platform: "",
+                  date: "",
+                  rank: "",
+                  score: 0,
+                  challenges_solved: 0,
+                  description: "",
+                  url: "",
+                  image_url: "",
+                })
+              }
+              className="w-full"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New CTF Event
+            </Button>
+          )}
+
+          <div className="grid gap-4">
+            {ctfEvents.map((event) => (
+              <Card key={event.id} className="p-4">
+                {editingCTFEvent?.id === event.id ? (
+                  renderCTFEventForm(editingCTFEvent, false)
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-semibold">{event.name}</h3>
+                    <p className="text-sm text-gray-500">{event.platform}</p>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditingCTFEvent({ ...event })}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteCTFEvent(event.id)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

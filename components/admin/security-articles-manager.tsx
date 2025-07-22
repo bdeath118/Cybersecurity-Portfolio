@@ -1,272 +1,219 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Trash2, Plus, ExternalLink, FileText, Eye, Heart } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { PlusCircle, Trash2, Edit, Save, XCircle } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import type { SecurityArticle } from "@/lib/types"
+import { addSecurityArticle, updateSecurityArticle, deleteSecurityArticle } from "@/lib/data" // Assuming these are Server Actions or API calls
 
-export function SecurityArticlesManager() {
-  const [articles, setArticles] = useState<SecurityArticle[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [newArticle, setNewArticle] = useState<Partial<SecurityArticle>>({
-    title: "",
-    platform: "",
-    url: "",
-    publishedDate: new Date().toISOString().split("T")[0],
-    summary: "",
-    tags: [],
-    views: 0,
-    likes: 0,
-    readTime: 5,
-  })
+interface SecurityArticlesManagerProps {
+  initialSecurityArticles: SecurityArticle[]
+}
+
+export function SecurityArticlesManager({ initialSecurityArticles }: SecurityArticlesManagerProps) {
+  const [articles, setArticles] = useState<SecurityArticle[]>(initialSecurityArticles)
+  const [editingArticle, setEditingArticle] = useState<SecurityArticle | null>(null)
+  const [newArticle, setNewArticle] = useState<Omit<SecurityArticle, "id"> | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
-    fetchArticles()
-  }, [])
+    setArticles(initialSecurityArticles)
+  }, [initialSecurityArticles])
 
-  const fetchArticles = async () => {
-    try {
-      const response = await fetch("/api/security-articles")
-      if (response.ok) {
-        const data = await response.json()
-        setArticles(data)
-      }
-    } catch (error) {
-      console.error("Error fetching articles:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const addArticle = async () => {
-    if (!newArticle.title || !newArticle.platform || !newArticle.url) return
-
-    try {
-      const response = await fetch("/api/security-articles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...newArticle,
-          id: Date.now().toString(),
-          tags:
-            typeof newArticle.tags === "string" ? newArticle.tags.split(",").map((tag) => tag.trim()) : newArticle.tags,
-        }),
-      })
-
-      if (response.ok) {
-        await fetchArticles()
-        setNewArticle({
-          title: "",
-          platform: "",
-          url: "",
-          publishedDate: new Date().toISOString().split("T")[0],
-          summary: "",
-          tags: [],
-          views: 0,
-          likes: 0,
-          readTime: 5,
+  const handleAddArticle = async () => {
+    if (newArticle) {
+      try {
+        const addedArticle = await addSecurityArticle(newArticle)
+        setArticles((prev) => [...prev, addedArticle])
+        setNewArticle(null)
+        toast({ title: "Success", description: "Security Article added successfully." })
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: `Failed to add article: ${error.message || "Unknown error"}`,
+          variant: "destructive",
         })
       }
-    } catch (error) {
-      console.error("Error adding article:", error)
     }
   }
 
-  const deleteArticle = async (id: string) => {
-    try {
-      const response = await fetch("/api/security-articles", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      })
-
-      if (response.ok) {
-        await fetchArticles()
+  const handleUpdateArticle = async () => {
+    if (editingArticle) {
+      try {
+        const updatedArticle = await updateSecurityArticle(editingArticle.id, editingArticle)
+        setArticles((prev) => prev.map((a) => (a.id === updatedArticle.id ? updatedArticle : a)))
+        setEditingArticle(null)
+        toast({ title: "Success", description: "Security Article updated successfully." })
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: `Failed to update article: ${error.message || "Unknown error"}`,
+          variant: "destructive",
+        })
       }
-    } catch (error) {
-      console.error("Error deleting article:", error)
     }
   }
 
-  if (isLoading) {
-    return <div>Loading security articles...</div>
+  const handleDeleteArticle = async (id: string) => {
+    try {
+      await deleteSecurityArticle(id)
+      setArticles((prev) => prev.filter((a) => a.id !== id))
+      toast({ title: "Success", description: "Security Article deleted successfully." })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: `Failed to delete article: ${error.message || "Unknown error"}`,
+        variant: "destructive",
+      })
+    }
   }
+
+  const renderArticleForm = (article: Omit<SecurityArticle, "id"> | SecurityArticle, isNew: boolean) => (
+    <div className="grid gap-4">
+      <div>
+        <Label htmlFor={isNew ? "new-title" : `title-${article.id}`}>Title</Label>
+        <Input
+          id={isNew ? "new-title" : `title-${article.id}`}
+          value={article.title}
+          onChange={(e) =>
+            isNew
+              ? setNewArticle({ ...newArticle!, title: e.target.value })
+              : setEditingArticle({ ...editingArticle!, title: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-author" : `author-${article.id}`}>Author</Label>
+        <Input
+          id={isNew ? "new-author" : `author-${article.id}`}
+          value={article.author}
+          onChange={(e) =>
+            isNew
+              ? setNewArticle({ ...newArticle!, author: e.target.value })
+              : setEditingArticle({ ...editingArticle!, author: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-publish-date" : `publish-date-${article.id}`}>Publish Date (YYYY-MM-DD)</Label>
+        <Input
+          id={isNew ? "new-publish-date" : `publish-date-${article.id}`}
+          type="date"
+          value={article.publish_date || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewArticle({ ...newArticle!, publish_date: e.target.value })
+              : setEditingArticle({ ...editingArticle!, publish_date: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-url" : `url-${article.id}`}>URL</Label>
+        <Input
+          id={isNew ? "new-url" : `url-${article.id}`}
+          value={article.url || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewArticle({ ...newArticle!, url: e.target.value })
+              : setEditingArticle({ ...editingArticle!, url: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-summary" : `summary-${article.id}`}>Summary</Label>
+        <Textarea
+          id={isNew ? "new-summary" : `summary-${article.id}`}
+          value={article.summary || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewArticle({ ...newArticle!, summary: e.target.value })
+              : setEditingArticle({ ...editingArticle!, summary: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-tags" : `tags-${article.id}`}>Tags (comma-separated)</Label>
+        <Input
+          id={isNew ? "new-tags" : `tags-${article.id}`}
+          value={article.tags.join(", ")}
+          onChange={(e) =>
+            isNew
+              ? setNewArticle({ ...newArticle!, tags: e.target.value.split(",").map((t) => t.trim()) })
+              : setEditingArticle({ ...editingArticle!, tags: e.target.value.split(",").map((t) => t.trim()) })
+          }
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => (isNew ? setNewArticle(null) : setEditingArticle(null))}>
+          <XCircle className="mr-2 h-4 w-4" /> Cancel
+        </Button>
+        <Button onClick={isNew ? handleAddArticle : handleUpdateArticle}>
+          <Save className="mr-2 h-4 w-4" /> {isNew ? "Add Article" : "Save Changes"}
+        </Button>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Add New Security Article
-          </CardTitle>
-          <CardDescription>Track your cybersecurity publications and blog posts</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="title">Article Title</Label>
-              <Input
-                id="title"
-                value={newArticle.title}
-                onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
-                placeholder="e.g., Advanced SQL Injection Techniques"
-              />
-            </div>
-            <div>
-              <Label htmlFor="platform">Platform</Label>
-              <Input
-                id="platform"
-                value={newArticle.platform}
-                onChange={(e) => setNewArticle({ ...newArticle, platform: e.target.value })}
-                placeholder="e.g., Medium, Dev.to, Personal Blog"
-              />
-            </div>
-            <div>
-              <Label htmlFor="url">Article URL</Label>
-              <Input
-                id="url"
-                value={newArticle.url}
-                onChange={(e) => setNewArticle({ ...newArticle, url: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="publishedDate">Published Date</Label>
-              <Input
-                id="publishedDate"
-                type="date"
-                value={newArticle.publishedDate}
-                onChange={(e) => setNewArticle({ ...newArticle, publishedDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="readTime">Read Time (minutes)</Label>
-              <Input
-                id="readTime"
-                type="number"
-                value={newArticle.readTime}
-                onChange={(e) => setNewArticle({ ...newArticle, readTime: Number(e.target.value) })}
-                placeholder="5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="tags">Tags (comma-separated)</Label>
-              <Input
-                id="tags"
-                value={Array.isArray(newArticle.tags) ? newArticle.tags.join(", ") : newArticle.tags}
-                onChange={(e) => setNewArticle({ ...newArticle, tags: e.target.value })}
-                placeholder="cybersecurity, penetration testing, OWASP"
-              />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="summary">Summary</Label>
-            <Textarea
-              id="summary"
-              value={newArticle.summary}
-              onChange={(e) => setNewArticle({ ...newArticle, summary: e.target.value })}
-              placeholder="Brief summary of the article content..."
-              rows={3}
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="views">Views</Label>
-              <Input
-                id="views"
-                type="number"
-                value={newArticle.views}
-                onChange={(e) => setNewArticle({ ...newArticle, views: Number(e.target.value) })}
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <Label htmlFor="likes">Likes/Claps</Label>
-              <Input
-                id="likes"
-                type="number"
-                value={newArticle.likes}
-                onChange={(e) => setNewArticle({ ...newArticle, likes: Number(e.target.value) })}
-                placeholder="0"
-              />
-            </div>
-          </div>
-          <Button onClick={addArticle} className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Article
-          </Button>
-        </CardContent>
-      </Card>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Manage Security Articles</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {newArticle ? (
+            <Card className="p-4 border-dashed">
+              <CardTitle className="mb-4">Add New Security Article</CardTitle>
+              {renderArticleForm(newArticle, true)}
+            </Card>
+          ) : (
+            <Button
+              onClick={() =>
+                setNewArticle({
+                  title: "",
+                  author: "",
+                  publish_date: "",
+                  url: "",
+                  summary: "",
+                  tags: [],
+                })
+              }
+              className="w-full"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New Article
+            </Button>
+          )}
 
-      <div className="grid gap-4">
-        {articles.map((article) => (
-          <Card key={article.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    {article.title}
-                    <Badge variant="outline">{article.platform}</Badge>
-                  </CardTitle>
-                  <CardDescription className="flex items-center gap-4 mt-2">
-                    <span>{new Date(article.publishedDate).toLocaleDateString()}</span>
-                    <span>{article.readTime} min read</span>
-                    {article.views > 0 && (
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-4 w-4" />
-                        {article.views}
-                      </span>
-                    )}
-                    {article.likes > 0 && (
-                      <span className="flex items-center gap-1">
-                        <Heart className="h-4 w-4" />
-                        {article.likes}
-                      </span>
-                    )}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={article.url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => deleteArticle(article.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {article.summary && <p className="text-sm text-muted-foreground mb-3">{article.summary}</p>}
-              {article.tags && article.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {article.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {articles.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No security articles yet. Add your first publication!</p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          <div className="grid gap-4">
+            {articles.map((article) => (
+              <Card key={article.id} className="p-4">
+                {editingArticle?.id === article.id ? (
+                  renderArticleForm(editingArticle, false)
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-semibold">{article.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      By {article.author} on {new Date(article.publish_date).toLocaleDateString()}
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditingArticle({ ...article })}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteArticle(article.id)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

@@ -1,344 +1,254 @@
 "use client"
 
+import { Badge } from "@/components/ui/badge"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Plus, Pencil, Trash2 } from "lucide-react"
-import type { Project } from "@/lib/types"
-import { createProject, editProject, removeProject } from "@/lib/actions"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { PlusCircle, Trash2, Edit, Save, XCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import type { Project } from "@/lib/types"
+import { addProject, updateProject, deleteProject } from "@/lib/data" // Assuming these are Server Actions or API calls
 
-export function ProjectsManager() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+interface ProjectsManagerProps {
+  initialProjects: Project[]
+}
+
+export function ProjectsManager({ initialProjects }: ProjectsManagerProps) {
+  const [projects, setProjects] = useState<Project[]>(initialProjects)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [newProject, setNewProject] = useState<Omit<Project, "id"> | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
-    async function fetchProjects() {
+    setProjects(initialProjects)
+  }, [initialProjects])
+
+  const handleAddProject = async () => {
+    if (newProject) {
       try {
-        const response = await fetch("/api/projects")
-        const data = await response.json()
-        setProjects(data)
-      } catch (error) {
-        console.error("Error fetching projects:", error)
+        const addedProject = await addProject(newProject)
+        setProjects((prev) => [...prev, addedProject])
+        setNewProject(null)
+        toast({ title: "Success", description: "Project added successfully." })
+      } catch (error: any) {
         toast({
           title: "Error",
-          description: "Failed to load projects",
+          description: `Failed to add project: ${error.message || "Unknown error"}`,
           variant: "destructive",
         })
-      } finally {
-        setLoading(false)
       }
     }
+  }
 
-    fetchProjects()
-  }, [toast])
-
-  async function handleAddProject(formData: FormData) {
-    try {
-      const result = await createProject(formData)
-
-      if (result.success) {
-        setProjects([...projects, result.project])
-        setIsAddDialogOpen(false)
+  const handleUpdateProject = async () => {
+    if (editingProject) {
+      try {
+        const updatedProject = await updateProject(editingProject.id, editingProject)
+        setProjects((prev) => prev.map((p) => (p.id === updatedProject.id ? updatedProject : p)))
+        setEditingProject(null)
+        toast({ title: "Success", description: "Project updated successfully." })
+      } catch (error: any) {
         toast({
-          title: "Success",
-          description: "Project added successfully",
+          title: "Error",
+          description: `Failed to update project: ${error.message || "Unknown error"}`,
+          variant: "destructive",
         })
       }
-    } catch (error) {
-      console.error("Error adding project:", error)
+    }
+  }
+
+  const handleDeleteProject = async (id: string) => {
+    try {
+      await deleteProject(id)
+      setProjects((prev) => prev.filter((p) => p.id !== id))
+      toast({ title: "Success", description: "Project deleted successfully." })
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to add project",
+        description: `Failed to delete project: ${error.message || "Unknown error"}`,
         variant: "destructive",
       })
     }
   }
 
-  async function handleEditProject(formData: FormData) {
-    if (!selectedProject) return
-
-    try {
-      const result = await editProject(selectedProject.id, formData)
-
-      if (result.success) {
-        setProjects(projects.map((p) => (p.id === selectedProject.id ? result.project : p)))
-        setIsEditDialogOpen(false)
-        setSelectedProject(null)
-        toast({
-          title: "Success",
-          description: "Project updated successfully",
-        })
-      }
-    } catch (error) {
-      console.error("Error updating project:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update project",
-        variant: "destructive",
-      })
-    }
-  }
-
-  async function handleDeleteProject() {
-    if (!selectedProject) return
-
-    try {
-      const result = await removeProject(selectedProject.id)
-
-      if (result.success) {
-        setProjects(projects.filter((p) => p.id !== selectedProject.id))
-        setIsDeleteDialogOpen(false)
-        setSelectedProject(null)
-        toast({
-          title: "Success",
-          description: "Project deleted successfully",
-        })
-      }
-    } catch (error) {
-      console.error("Error deleting project:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete project",
-        variant: "destructive",
-      })
-    }
-  }
-
-  if (loading) {
-    return <div className="text-center py-8">Loading projects...</div>
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Projects</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Project
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New Project</DialogTitle>
-              <DialogDescription>Create a new project to showcase in your portfolio</DialogDescription>
-            </DialogHeader>
-            <form action={handleAddProject} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input id="title" name="title" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <Input id="date" name="date" type="date" required />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="summary">Summary</Label>
-                <Input id="summary" name="summary" required />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" name="description" rows={4} required />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="technologies">Technologies (comma-separated)</Label>
-                <Input id="technologies" name="technologies" required />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="image">Image URL</Label>
-                  <Input id="image" name="image" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="demoUrl">Demo URL</Label>
-                  <Input id="demoUrl" name="demoUrl" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="githubUrl">GitHub URL</Label>
-                <Input id="githubUrl" name="githubUrl" />
-              </div>
-
-              <DialogFooter>
-                <Button type="submit">Add Project</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+  const renderProjectForm = (project: Omit<Project, "id"> | Project, isNew: boolean) => (
+    <div className="grid gap-4">
+      <div>
+        <Label htmlFor={isNew ? "new-title" : `title-${project.id}`}>Title</Label>
+        <Input
+          id={isNew ? "new-title" : `title-${project.id}`}
+          value={project.title}
+          onChange={(e) =>
+            isNew
+              ? setNewProject({ ...newProject!, title: e.target.value })
+              : setEditingProject({ ...editingProject!, title: e.target.value })
+          }
+        />
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.length === 0 ? (
-          <div className="col-span-full text-center py-8 text-muted-foreground">
-            No projects found. Add your first project to get started.
-          </div>
-        ) : (
-          projects.map((project) => (
-            <Card key={project.id}>
-              <CardHeader>
-                <CardTitle className="line-clamp-1">{project.title}</CardTitle>
-                <CardDescription>{project.date}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{project.summary}</p>
-                <div className="flex flex-wrap gap-2">
-                  {project.technologies.slice(0, 3).map((tech) => (
-                    <Badge key={tech} variant="secondary">
-                      {tech}
-                    </Badge>
-                  ))}
-                  {project.technologies.length > 3 && (
-                    <Badge variant="outline">+{project.technologies.length - 3}</Badge>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Dialog
-                  open={isEditDialogOpen && selectedProject?.id === project.id}
-                  onOpenChange={(open) => {
-                    setIsEditDialogOpen(open)
-                    if (!open) setSelectedProject(null)
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => setSelectedProject(project)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Edit Project</DialogTitle>
-                      <DialogDescription>Update the details of your project</DialogDescription>
-                    </DialogHeader>
-                    <form action={handleEditProject} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-title">Title</Label>
-                          <Input id="edit-title" name="title" defaultValue={selectedProject?.title} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-date">Date</Label>
-                          <Input id="edit-date" name="date" type="date" defaultValue={selectedProject?.date} required />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-summary">Summary</Label>
-                        <Input id="edit-summary" name="summary" defaultValue={selectedProject?.summary} required />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-description">Description</Label>
-                        <Textarea
-                          id="edit-description"
-                          name="description"
-                          rows={4}
-                          defaultValue={selectedProject?.description}
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-technologies">Technologies (comma-separated)</Label>
-                        <Input
-                          id="edit-technologies"
-                          name="technologies"
-                          defaultValue={selectedProject?.technologies.join(", ")}
-                          required
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-image">Image URL</Label>
-                          <Input id="edit-image" name="image" defaultValue={selectedProject?.image} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-demoUrl">Demo URL</Label>
-                          <Input id="edit-demoUrl" name="demoUrl" defaultValue={selectedProject?.demoUrl} />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-githubUrl">GitHub URL</Label>
-                        <Input id="edit-githubUrl" name="githubUrl" defaultValue={selectedProject?.githubUrl} />
-                      </div>
-
-                      <DialogFooter>
-                        <Button type="submit">Update Project</Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-
-                <AlertDialog
-                  open={isDeleteDialogOpen && selectedProject?.id === project.id}
-                  onOpenChange={(open) => {
-                    setIsDeleteDialogOpen(open)
-                    if (!open) setSelectedProject(null)
-                  }}
-                >
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" onClick={() => setSelectedProject(project)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Project</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this project? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteProject}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardFooter>
-            </Card>
-          ))
-        )}
+      <div>
+        <Label htmlFor={isNew ? "new-description" : `description-${project.id}`}>Description</Label>
+        <Textarea
+          id={isNew ? "new-description" : `description-${project.id}`}
+          value={project.description}
+          onChange={(e) =>
+            isNew
+              ? setNewProject({ ...newProject!, description: e.target.value })
+              : setEditingProject({ ...editingProject!, description: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-technologies" : `technologies-${project.id}`}>
+          Technologies (comma-separated)
+        </Label>
+        <Input
+          id={isNew ? "new-technologies" : `technologies-${project.id}`}
+          value={project.technologies.join(", ")}
+          onChange={(e) =>
+            isNew
+              ? setNewProject({ ...newProject!, technologies: e.target.value.split(",").map((t) => t.trim()) })
+              : setEditingProject({ ...editingProject!, technologies: e.target.value.split(",").map((t) => t.trim()) })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-github-url" : `github-url-${project.id}`}>GitHub URL</Label>
+        <Input
+          id={isNew ? "new-github-url" : `github-url-${project.id}`}
+          value={project.github_url || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewProject({ ...newProject!, github_url: e.target.value })
+              : setEditingProject({ ...editingProject!, github_url: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-live-url" : `live-url-${project.id}`}>Live URL</Label>
+        <Input
+          id={isNew ? "new-live-url" : `live-url-${project.id}`}
+          value={project.live_url || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewProject({ ...newProject!, live_url: e.target.value })
+              : setEditingProject({ ...editingProject!, live_url: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-image-url" : `image-url-${project.id}`}>Image URL</Label>
+        <Input
+          id={isNew ? "new-image-url" : `image-url-${project.id}`}
+          value={project.image_url || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewProject({ ...newProject!, image_url: e.target.value })
+              : setEditingProject({ ...editingProject!, image_url: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-category" : `category-${project.id}`}>Category</Label>
+        <Input
+          id={isNew ? "new-category" : `category-${project.id}`}
+          value={project.category || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewProject({ ...newProject!, category: e.target.value })
+              : setEditingProject({ ...editingProject!, category: e.target.value })
+          }
+        />
+      </div>
+      <div>
+        <Label htmlFor={isNew ? "new-date" : `date-${project.id}`}>Date (YYYY-MM-DD)</Label>
+        <Input
+          id={isNew ? "new-date" : `date-${project.id}`}
+          type="date"
+          value={project.date || ""}
+          onChange={(e) =>
+            isNew
+              ? setNewProject({ ...newProject!, date: e.target.value })
+              : setEditingProject({ ...editingProject!, date: e.target.value })
+          }
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => (isNew ? setNewProject(null) : setEditingProject(null))}>
+          <XCircle className="mr-2 h-4 w-4" /> Cancel
+        </Button>
+        <Button onClick={isNew ? handleAddProject : handleUpdateProject}>
+          <Save className="mr-2 h-4 w-4" /> {isNew ? "Add Project" : "Save Changes"}
+        </Button>
       </div>
     </div>
+  )
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Manage Projects</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {newProject ? (
+            <Card className="p-4 border-dashed">
+              <CardTitle className="mb-4">Add New Project</CardTitle>
+              {renderProjectForm(newProject, true)}
+            </Card>
+          ) : (
+            <Button
+              onClick={() =>
+                setNewProject({
+                  title: "",
+                  description: "",
+                  technologies: [],
+                  github_url: "",
+                  live_url: "",
+                  image_url: "",
+                  category: "",
+                  date: "",
+                })
+              }
+              className="w-full"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New Project
+            </Button>
+          )}
+
+          <div className="grid gap-4">
+            {projects.map((project) => (
+              <Card key={project.id} className="p-4">
+                {editingProject?.id === project.id ? (
+                  renderProjectForm(editingProject, false)
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-semibold">{project.title}</h3>
+                    <p className="text-sm text-gray-500">{project.description}</p>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {project.technologies.map((tech, index) => (
+                        <Badge key={index} variant="secondary">
+                          {tech}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditingProject({ ...project })}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteProject(project.id)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

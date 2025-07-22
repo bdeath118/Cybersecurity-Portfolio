@@ -1,84 +1,77 @@
 import type { DigitalBadge } from "./types"
-import { getToken, CredlyAuthProvider, CanvasAuthProvider } from "./auth-providers"
 
-export class BadgeIntegration {
-  // Import badges from Credly using OAuth
-  async importCredlyBadges(): Promise<DigitalBadge[]> {
-    try {
-      // Get the stored token
-      const tokenData = getToken("credly")
-      if (!tokenData) {
-        console.error("No Credly token found")
-        return []
-      }
+// Mock data for Credly badges
+const mockCredlyBadges: DigitalBadge[] = [
+  {
+    id: "credly-ibm-cybersec",
+    name: "IBM Cybersecurity Analyst Professional Certificate",
+    issuer: "IBM",
+    issue_date: "2022-09-01",
+    credential_url: "https://www.credly.com/badges/ibm-cybersecurity-analyst-professional-certificate",
+    image_url:
+      "https://images.credly.com/images/a7234567-8901-2345-6789-012345678901/IBM_Cybersecurity_Analyst_Professional_Certificate.png",
+    description: "Demonstrates proficiency in cybersecurity analysis, threat intelligence, and incident response.",
+  },
+  {
+    id: "credly-cnd",
+    name: "Certified Network Defender (CND)",
+    issuer: "EC-Council",
+    issue_date: "2023-04-20",
+    credential_url: "https://www.credly.com/badges/certified-network-defender",
+    image_url: "https://images.credly.com/images/b8345678-9012-3456-7890-123456789012/CND_Badge.png",
+    description: "Validates skills in protecting, detecting, and responding to network attacks.",
+  },
+  {
+    id: "credly-aws-security",
+    name: "AWS Certified Security - Specialty",
+    issuer: "Amazon Web Services (AWS)",
+    issue_date: "2024-01-10",
+    credential_url: "https://www.credly.com/badges/aws-certified-security-specialty",
+    image_url: "https://images.credly.com/images/c9456789-0123-4567-8901-234567890123/AWS_Cloud_Practitioner.png", // Using a placeholder image for now
+    description: "Recognizes expertise in securing data and workloads in the AWS cloud.",
+  },
+  {
+    id: "credly-comptia-a",
+    name: "CompTIA A+",
+    issuer: "CompTIA",
+    issue_date: "2021-05-01",
+    credential_url: "https://www.credly.com/badges/comptia-a-plus",
+    image_url: "https://images.credly.com/images/original_images/a_plus_ce.png",
+    description: "Foundational IT skills for entry-level IT professionals.",
+  },
+  {
+    id: "credly-google-it-support",
+    name: "Google IT Support Professional Certificate",
+    issuer: "Google",
+    issue_date: "2021-03-15",
+    credential_url: "https://www.credly.com/badges/google-it-support-professional-certificate",
+    image_url: "https://images.credly.com/images/original_images/google-it-support-professional-certificate.png",
+    description: "Covers troubleshooting, customer service, networking, operating systems, and system administration.",
+  },
+]
 
-      // Use the token to fetch badges
-      const credlyAuth = new CredlyAuthProvider()
-      const badges = await credlyAuth.getUserBadges(tokenData.accessToken)
+/**
+ * Simulates fetching digital badges from Credly.
+ * In a real application, this would involve making API calls to Credly.
+ * @param username The Credly username to fetch badges for.
+ * @param limit Optional limit for the number of badges to return.
+ * @returns A promise that resolves to an array of DigitalBadge objects.
+ */
+export async function getCredlyBadges(username: string, limit?: number): Promise<DigitalBadge[]> {
+  console.log(`Simulating fetching Credly badges for username: ${username}`)
+  // Simulate API call delay
+  await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Transform the badges to our format
-      return badges.map((badge: any) => ({
-        id: `credly-${badge.id}`,
-        name: badge.badge_template.name,
-        issuer: badge.badge_template.issuer.name,
-        date: badge.issued_at.split("T")[0],
-        description: badge.badge_template.description,
-        badgeUrl: badge.badge_template.image_url,
-        verificationUrl: badge.public_url,
-        platform: "credly" as const,
-        skills: badge.badge_template.skills?.map((skill: any) => skill.name) || [],
-        image: badge.badge_template.image_url,
-      }))
-    } catch (error) {
-      console.error("Error importing Credly badges:", error)
-      return []
-    }
-  }
+  // Filter mock data based on a hypothetical username match or just return all
+  // For a real integration, you'd use the username to query the actual Credly API.
+  const badges = mockCredlyBadges.filter(
+    (badge) =>
+      badge.issuer.includes("IBM") ||
+      badge.issuer.includes("EC-Council") ||
+      badge.issuer.includes("Amazon Web Services") ||
+      badge.issuer.includes("CompTIA") ||
+      badge.issuer.includes("Google"),
+  )
 
-  // Import badges from Canvas using OAuth
-  async importCanvasBadges(): Promise<DigitalBadge[]> {
-    try {
-      // Get the stored token
-      const tokenData = getToken("canvas")
-      if (!tokenData) {
-        console.error("No Canvas token found")
-        return []
-      }
-
-      // Check if Canvas user ID is available
-      const userId = process.env.CANVAS_USER_ID
-      if (!userId) {
-        console.error("Canvas User ID not configured")
-        return []
-      }
-
-      // Use the token to fetch badges
-      const canvasAuth = new CanvasAuthProvider()
-      const badges = await canvasAuth.getUserBadges(tokenData.accessToken, userId)
-
-      // Transform the badges to our format
-      return badges.map((badge: any) => ({
-        id: `canvas-${badge.id}`,
-        name: badge.name,
-        issuer: badge.issuer || "Canvas",
-        date: badge.issued_at?.split("T")[0] || new Date().toISOString().split("T")[0],
-        description: badge.description || "",
-        badgeUrl: badge.image_url,
-        verificationUrl: badge.verification_url,
-        platform: "canvas" as const,
-        skills: [],
-        image: badge.image_url,
-      }))
-    } catch (error) {
-      console.error("Error importing Canvas badges:", error)
-      return []
-    }
-  }
-
-  // Import badges from LinkedIn
-  async importLinkedInBadges(): Promise<DigitalBadge[]> {
-    // LinkedIn doesn't have a direct badges API, but we could
-    // potentially scrape the profile or use a different approach
-    return []
-  }
+  return limit ? badges.slice(0, limit) : badges
 }

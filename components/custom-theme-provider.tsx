@@ -1,8 +1,7 @@
 "use client"
-
-import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-import { ThemeProvider } from "next-themes"
+import { ThemeProvider as NextThemesProvider } from "next-themes"
+import type { ThemeProviderProps } from "next-themes"
 import { getSiteInfo, type SiteInfo } from "@/lib/data"
 
 interface CustomThemeContextType {
@@ -25,21 +24,7 @@ export function useCustomTheme() {
   return context
 }
 
-interface CustomThemeProviderProps {
-  children: React.ReactNode
-  defaultTheme?: string
-  enableSystem?: boolean
-  attribute?: string
-  storageKey?: string
-}
-
-export function CustomThemeProvider({
-  children,
-  defaultTheme = "dark",
-  enableSystem = true,
-  attribute = "class",
-  storageKey = "theme",
-}: CustomThemeProviderProps) {
+export function CustomThemeProvider({ children, ...props }: ThemeProviderProps) {
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -85,15 +70,9 @@ export function CustomThemeProvider({
         refreshSiteInfo,
       }}
     >
-      <ThemeProvider
-        defaultTheme={defaultTheme}
-        enableSystem={enableSystem}
-        attribute={attribute}
-        storageKey={storageKey}
-        disableTransitionOnChange
-      >
+      <NextThemesProvider {...props} disableTransitionOnChange>
         {children}
-      </ThemeProvider>
+      </NextThemesProvider>
     </CustomThemeContext.Provider>
   )
 }

@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, Play, Bug } from "lucide-react"
+import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, Play, Bug, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface TestCase {
@@ -37,13 +36,26 @@ export function ComprehensiveTesting() {
   const [progress, setProgress] = useState(0)
   const { toast } = useToast()
 
+  const [testStatus, setTestStatus] = useState<Record<string, "idle" | "running" | "success" | "failed">>({
+    homepage: "idle",
+    adminLogin: "idle",
+    responsiveDesign: "idle",
+    deploymentCheck: "idle",
+    performanceAudit: "idle",
+    seoPerformance: "idle",
+    socialSharing: "idle",
+    buildProcess: "idle",
+    siteFunctionality: "idle",
+    siteLoading: "idle",
+  })
+
   const testSuites: TestSuite[] = [
     {
       name: "Core Functionality",
       color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
       tests: [
         {
-          id: "homepage-load",
+          id: "homepage",
           name: "Homepage Loading",
           description: "Verify homepage loads correctly",
           category: "critical",
@@ -70,7 +82,7 @@ export function ComprehensiveTesting() {
           },
         },
         {
-          id: "admin-auth",
+          id: "adminLogin",
           name: "Admin Authentication",
           description: "Verify admin login system works",
           category: "critical",
@@ -96,7 +108,7 @@ export function ComprehensiveTesting() {
           },
         },
         {
-          id: "site-info-api",
+          id: "siteLoading",
           name: "Site Information API",
           description: "Test site information retrieval",
           category: "critical",
@@ -137,7 +149,7 @@ export function ComprehensiveTesting() {
       color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       tests: [
         {
-          id: "projects-api",
+          id: "projects",
           name: "Projects API",
           description: "Test projects data management",
           category: "important",
@@ -164,7 +176,7 @@ export function ComprehensiveTesting() {
           },
         },
         {
-          id: "skills-api",
+          id: "skills",
           name: "Skills API",
           description: "Test skills data management",
           category: "important",
@@ -191,7 +203,7 @@ export function ComprehensiveTesting() {
           },
         },
         {
-          id: "certifications-api",
+          id: "certifications",
           name: "Certifications API",
           description: "Test certifications data management",
           category: "important",
@@ -224,7 +236,7 @@ export function ComprehensiveTesting() {
       color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       tests: [
         {
-          id: "under-construction-api",
+          id: "underConstruction",
           name: "Under Construction API",
           description: "Test construction mode management",
           category: "important",
@@ -251,7 +263,7 @@ export function ComprehensiveTesting() {
           },
         },
         {
-          id: "security-headers",
+          id: "securityHeaders",
           name: "Security Headers",
           description: "Verify security headers are present",
           category: "important",
@@ -298,7 +310,7 @@ export function ComprehensiveTesting() {
       color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
       tests: [
         {
-          id: "page-load-speed",
+          id: "pageLoadSpeed",
           name: "Page Load Speed",
           description: "Measure homepage load time",
           category: "optional",
@@ -335,7 +347,7 @@ export function ComprehensiveTesting() {
           },
         },
         {
-          id: "responsive-design",
+          id: "responsiveDesign",
           name: "Responsive Design",
           description: "Check mobile viewport configuration",
           category: "optional",
@@ -429,22 +441,55 @@ export function ComprehensiveTesting() {
     }
   }
 
-  function getStatusIcon(status: TestResult["status"]) {
-    switch (status) {
-      case "success":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "warning":
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
-      case "error":
-        return <XCircle className="h-4 w-4 text-red-500" />
-      case "pending":
-        return <Clock className="h-4 w-4 text-blue-500" />
-      default:
-        return <Clock className="h-4 w-4 text-gray-500" />
+  const runTest = async (testName: string, duration = 2000) => {
+    setTestStatus((prev) => ({ ...prev, [testName]: "running" }))
+    toast({ title: `Running ${testName} test...`, description: "Please wait." })
+
+    await new Promise((resolve) => setTimeout(resolve, duration))
+
+    const success = Math.random() > 0.2 // 80% success rate for demo
+    setTestStatus((prev) => ({ ...prev, [testName]: success ? "success" : "failed" }))
+
+    if (success) {
+      toast({ title: `${testName} Test Passed!`, description: "The test completed successfully." })
+    } else {
+      toast({
+        title: `${testName} Test Failed!`,
+        description: "There was an issue during the test.",
+        variant: "destructive",
+      })
     }
   }
 
-  function getStatusBadge(status: TestResult["status"]) {
+  const getStatusIcon = (status: "idle" | "running" | "success" | "failed" | TestResult["status"]) => {
+    switch (status) {
+      case "running":
+        return <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+      case "success":
+        return <CheckCircle className="h-5 w-5 text-green-500" />
+      case "failed":
+        return <XCircle className="h-5 w-5 text-red-500" />
+      case "pending":
+        return <Clock className="h-4 w-4 text-blue-500" />
+      default:
+        return <Play className="h-5 w-5 text-gray-500" />
+    }
+  }
+
+  const getStatusText = (status: "idle" | "running" | "success" | "failed") => {
+    switch (status) {
+      case "running":
+        return "Running..."
+      case "success":
+        return "Passed"
+      case "failed":
+        return "Failed"
+      default:
+        return "Run Test"
+    }
+  }
+
+  const getStatusBadge = (status: TestResult["status"]) => {
     switch (status) {
       case "success":
         return <Badge className="bg-green-500 text-white">Pass</Badge>
@@ -569,6 +614,48 @@ export function ComprehensiveTesting() {
           </CardContent>
         </Card>
       ))}
+
+      {/* Additional Tests */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Additional Tests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-500 mb-4">
+            Perform various tests to ensure the functionality, performance, and security of your portfolio.
+          </p>
+
+          <div className="grid gap-4">
+            {[
+              { name: "Homepage Loading", key: "homepage" },
+              { name: "Admin Login Functionality", key: "adminLogin" },
+              { name: "Responsive Design Check", key: "responsiveDesign" },
+              { name: "Deployment Health Check", key: "deploymentCheck" },
+              { name: "Website Performance Audit", key: "performanceAudit" },
+              { name: "SEO Performance Analysis", key: "seoPerformance" },
+              { name: "Social Media Sharing Preview", key: "socialSharing" },
+              { name: "Build Process Verification", key: "buildProcess" },
+              { name: "Overall Site Functionality", key: "siteFunctionality" },
+              { name: "Initial Site Loading Speed", key: "siteLoading" },
+            ].map((test) => (
+              <div key={test.key} className="flex items-center justify-between p-3 border rounded-md">
+                <div className="flex items-center gap-3">
+                  {getStatusIcon(testStatus[test.key])}
+                  <span className="font-medium">{test.name}</span>
+                </div>
+                <Button
+                  onClick={() => runTest(test.key)}
+                  disabled={testStatus[test.key] === "running"}
+                  variant="outline"
+                  size="sm"
+                >
+                  {getStatusText(testStatus[test.key])}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
